@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Percolation Phase Transitions in ε-Ball Random Geometric Graphs</title>
+<meta name="description" content="Interactive simulation of ε-ball random geometric graphs: connect pairs at distance ≤ ε and observe percolation transitions, plateaus, and cluster merging in GCC(ε) and SGCC(ε).">
+<style>
+  :root {
+    --bg: #f5f7fb; --card: #ffffff; --ink: #1f2329; --muted: #646a73;
+    --line: #e2e5ec; --accent: #3370ff; --accent-soft: #eaf1ff;
+    --gcc: #b8860b; --sgcc: #1f7a3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 18px 22px 28px; }
+  header {
+    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 16px;
+    margin-bottom: 12px;
+  }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px; box-shadow: 0 2px 12px rgba(20, 30, 55, 0.04);
+  }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .presets .lbl { font-size: 12.5px; color: var(--muted); margin-right: 2px; }
+  .pill {
+    font: inherit; font-size: 12.5px; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); cursor: pointer; transition: .14s;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+  .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+
+  .hint-bar {
+    background: #f3f7ff; border: 1px solid #d5e3ff; border-radius: 9px; padding: 7px 12px; margin-bottom: 10px;
+    font-size: 13px; color: #243b6b; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .status { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 9px 12px;
+    background: #f6f8fb; border: 1px solid #eaedf3; border-radius: 10px; margin-bottom: 10px; font-size: 13px;
+  }
+  .controls label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .controls select, .btn {
+    font: inherit; font-size: 12.8px; padding: 4px 10px; border-radius: 7px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .btn:hover { border-color: #b5bcc9; background: #f9fafc; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #245ee5; }
+  .controls input[type=range] { width: 120px; accent-color: var(--accent); cursor: pointer; }
+
+  .eps-box { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; }
+  .eps-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .eps-row input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); cursor: pointer; }
+  .eps-readout { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; min-width: 185px; text-align: right; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 7px; font-size: 12px; color: var(--muted); }
+  .chip {
+    font: inherit; font-size: 12px; border-radius: 6px; padding: 2px 8px; cursor: pointer;
+    border: 1px solid #f0cfa0; background: #fff7e6; color: #9c5700; transition: .12s;
+  }
+  .chip:hover { transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,.06); }
+  .chip.sg { background: #eaf7ee; border-color: #b7e1c4; color: #1a6b33; }
+  .chip.pl { background: #fffbe0; border: 1px dashed #cdb100; color: #756200; font-weight: 500; }
+
+  .demo { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.42fr); gap: 14px; }
+  .panel { border: 1px solid var(--line); border-radius: 11px; padding: 10px; position: relative; background: #fff; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin: 0 2px 6px; gap: 8px; }
+  .panel-head b { color: var(--ink); font-size: 13px; }
+  .panel canvas { width: 100%; display: block; border-radius: 6px; }
+  #scatter { aspect-ratio: 1 / 1; cursor: crosshair; background: #fafbfd; touch-action: none; }
+  #chart { aspect-ratio: 1.48 / 1; cursor: ew-resize; touch-action: none; }
+  .hud {
+    position: absolute; left: 16px; bottom: 38px; background: rgba(25, 30, 42, .88); color: #fff;
+    padding: 5px 10px; border-radius: 7px; font-size: 12px; pointer-events: none; display: none; font-variant-numeric: tabular-nums;
+  }
+  .legend { font-size: 11.8px; color: var(--muted); margin: 6px 2px 0; line-height: 1.55; }
+  .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin: 0 4px 0 8px; border-radius: 2px; }
+
+  .kpi { display: grid; grid-template-columns: repeat(6, 1fr); gap: 9px; margin-top: 12px; }
+  .kpi div { background: #f6f8fb; border: 1px solid #eceff5; border-radius: 10px; padding: 8px 11px; }
+  .kpi .v { font-size: 18px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .kpi .k { font-size: 11.5px; color: var(--muted); }
+
+  .foot {
+    margin-top: 10px; font-size: 12px; color: var(--muted);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; padding: 0 4px;
+  }
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; background: #1f2329; color: #fff; padding: 8px 14px;
+    border-radius: 8px; font-size: 12.5px; opacity: 0; transform: translateY(8px); transition: .2s; pointer-events: none; z-index: 99;
+  }
+  .toast.show { opacity: .96; transform: translateY(0); }
+
+  @media (max-width: 960px) {
+    .wrap { padding: 12px; }
+    .demo { grid-template-columns: 1fr; }
+    .kpi { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Percolation Phase Transitions in <i>ε</i>-Ball Random Geometric Graphs</h1>
+    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i> · Explore phase transitions and cluster-separation plateaus in GCC(<i>ε</i>) &amp; SGCC(<i>ε</i>)</div>
+  </header>
+
+  <div class="card">
+    <div class="presets" id="presetBar">
+      <span class="lbl">Distribution:</span>
+      <button class="pill active" data-dist="blobs_equal">3 Equal-Density Blobs</button>
+      <button class="pill" data-dist="uniform">Uniform Square</button>
+      <button class="pill" data-dist="moons">Two Moons</button>
+      <button class="pill" data-dist="blobs_unequal">3 Unequal-Density Blobs</button>
+      <button class="pill" data-dist="blobs_noise">3 Blobs + 25% Noise</button>
+      <button class="pill" data-dist="gaussian">Single Gaussian</button>
+      <button class="pill" data-dist="powerlaw">Power-Law Density</button>
+    </div>
+
+    <div class="hint-bar">
+      <span id="distHint"></span>
+      <span class="status" id="status"></span>
+    </div>
+
+    <div class="controls">
+      <label>Nodes <i>N</i> <input id="n" type="range" min="200" max="4000" step="100" value="1000"><b id="nv">1000</b></label>
+      <label>Curve avg <select id="runs"><option value="1">1 run (single)</option><option value="4" selected>4 runs (mean)</option><option value="8">8 runs (mean)</option></select></label>
+      <label><input id="showEdges" type="checkbox" checked> Show edges</label>
+      <label title="Solid = active MST edges (≤ ε); dashed orange = longest inter-cluster MST bridge edges (> ε)"><input id="showMST" type="checkbox"> MST backbone &amp; bridges</label>
+      <button id="regen" class="btn primary">Resample</button>
+      <button id="shareBtn" class="btn">🔗 Copy link</button>
+    </div>
+
+    <div class="eps-box">
+      <div class="eps-row">
+        <button id="prevCrit" class="btn" title="Previous critical point">⏮</button>
+        <button id="play" class="btn">▶ Sweep ε</button>
+        <button id="nextCrit" class="btn" title="Next critical point">⏭</button>
+        <span><b><i>ε</i></b></span>
+        <input id="eps" type="range" min="0" max="1000" value="420">
+        <span class="eps-readout" id="epsv"></span>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="demo">
+      <div class="panel">
+        <div class="panel-head"><b>Point Cloud &amp; <i>ε</i>-Graph Components</b><span>Hover any node to inspect its <i>ε</i>-ball &amp; degree</span></div>
+        <canvas id="scatter"></canvas>
+        <div class="hud" id="scatterHud"></div>
+        <div class="legend">Component rank: <b style="color:#d62728">#1 (GCC)</b> · <b style="color:#1f77b4">#2 (SGCC)</b> · <b style="color:#2ca02c">#3</b> · <b style="color:#9467bd">#4</b> · <b style="color:#ff7f0e">#5</b> · <b style="color:#8c564b">#6</b> · gray = smaller · top-right circle = <i>ε</i> scale</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><b>Percolation Curves GCC(<i>ε</i>) / SGCC(<i>ε</i>)</b><span>Click or drag on the chart to scrub <i>ε</i></span></div>
+        <canvas id="chart"></canvas>
+        <div class="legend">
+          <i style="background:var(--gcc)"></i>GCC/<i>N</i> (left axis)
+          <i style="background:var(--sgcc)"></i>SGCC/<i>N</i> (right axis)
+          <i style="background:#333; height:1px; border-top:1.5px dashed #333"></i>Detected GCC jump
+          <i style="background:#f5e68a; height:9px"></i>Plateau (suitable <i>ε</i>)
+          <i style="background:#3370ff"></i>Current <i>ε</i>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div><div class="v" id="k_eps">–</div><div class="k"><i>ε</i> (% of diameter <i>D</i>)</div></div>
+      <div><div class="v" id="k_deg">–</div><div class="k">Mean degree ⟨<i>k</i>⟩ = 2<i>E</i>/<i>N</i></div></div>
+      <div><div class="v" id="k_gcc">–</div><div class="k">Largest comp. GCC / <i>N</i></div></div>
+      <div><div class="v" id="k_sgcc">–</div><div class="k">2nd largest SGCC / <i>N</i></div></div>
+      <div><div class="v" id="k_ncomp">–</div><div class="k">Connected components</div></div>
+      <div><div class="v" id="k_edges">–</div><div class="k">Active edges <i>E</i></div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Exact connectivity events via Euclidean Minimum Spanning Tree · Computed locally in your browser</span>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DIST_META = {
+  uniform: "Uniform square: homogeneous density yields a single sharp percolation transition with no cluster-separation plateau.",
+  gaussian: "Single Gaussian: the dense core percolates at tiny ε and smoothly absorbs sparser peripheral nodes; SGCC stays small.",
+  blobs_equal: "3 equal-density blobs: simultaneous intra-cluster percolation creates a wide plateau (GCC ≈ 1/3) before inter-cluster bridging.",
+  blobs_unequal: "3 unequal-density blobs: the densest cluster is already connected while sparser ones remain fragmented—no single global ε separates all three.",
+  blobs_noise: "3 blobs + 25% noise: background noise points act as stepping-stone bridges between clusters, eroding the plateau.",
+  powerlaw: "Power-law density: density spans orders of magnitude without a characteristic scale, so GCC grows smoothly from the core outward.",
+  moons: "Two moons: each non-convex manifold percolates along its local neighborhood first, forming a clean plateau at GCC ≈ SGCC ≈ 0.50.",
+};
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function normalGen(rnd) {
+  let spare = null;
+  return () => {
+    if (spare !== null) { const s = spare; spare = null; return s; }
+    const u = Math.max(rnd(), 1e-12), v = rnd();
+    const m = Math.sqrt(-2 * Math.log(u));
+    spare = m * Math.sin(2 * Math.PI * v);
+    return m * Math.cos(2 * Math.PI * v);
+  };
+}
+function blobs(n, rnd, nrm, centers, sigmas, weights, xs, ys) {
+  const tot = weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < n; i++) {
+    let u = rnd() * tot, k = 0;
+    while (k < weights.length - 1 && u > weights[k]) { u -= weights[k]; k++; }
+    xs[i] = centers[k][0] + sigmas[k] * nrm();
+    ys[i] = centers[k][1] + sigmas[k] * nrm();
+  }
+}
+const C3 = [[0.25, 0.25], [0.75, 0.3], [0.5, 0.75]];
+const GEN = {
+  uniform(n, rnd, nrm, xs, ys) { for (let i = 0; i < n; i++) { xs[i] = rnd(); ys[i] = rnd(); } },
+  gaussian(n, rnd, nrm, xs, ys) { for (let i = 0; i < n; i++) { xs[i] = 0.5 + 0.12 * nrm(); ys[i] = 0.5 + 0.12 * nrm(); } },
+  blobs_equal(n, rnd, nrm, xs, ys) { blobs(n, rnd, nrm, C3, [0.06, 0.06, 0.06], [1, 1, 1], xs, ys); },
+  blobs_unequal(n, rnd, nrm, xs, ys) { blobs(n, rnd, nrm, C3, [0.03, 0.07, 0.11], [0.4, 0.35, 0.25], xs, ys); },
+  blobs_noise(n, rnd, nrm, xs, ys) {
+    const m = Math.floor(0.75 * n);
+    blobs(m, rnd, nrm, C3, [0.05, 0.05, 0.05], [1, 1, 1], xs, ys);
+    for (let i = m; i < n; i++) { xs[i] = rnd(); ys[i] = rnd(); }
+  },
+  powerlaw(n, rnd, nrm, xs, ys) {
+    for (let i = 0; i < n; i++) {
+      const r = 0.5 * Math.pow(rnd(), 1.5), t = 2 * Math.PI * rnd();
+      xs[i] = 0.5 + r * Math.cos(t); ys[i] = 0.5 + r * Math.sin(t);
+    }
+  },
+  moons(n, rnd, nrm, xs, ys) {
+    const m = Math.floor(n / 2);
+    for (let i = 0; i < n; i++) {
+      const t = Math.PI * rnd();
+      const x = i < m ? Math.cos(t) : 1 - Math.cos(t);
+      const y = i < m ? Math.sin(t) : 0.5 - Math.sin(t);
+      xs[i] = 0.15 + 0.25 * (x + 0.06 * nrm());
+      ys[i] = 0.15 + 0.25 * (y + 0.06 * nrm());
+    }
+  },
+};
+function sample(dist, n, seed) {
+  const rnd = mulberry32(seed), nrm = normalGen(rnd);
+  const xs = new Float64Array(n), ys = new Float64Array(n);
+  GEN[dist](n, rnd, nrm, xs, ys);
+  return { xs, ys, n };
+}
+
+function mst(P) {
+  const { xs, ys, n } = P;
+  const inT = new Uint8Array(n), best = new Float64Array(n).fill(Infinity), from = new Int32Array(n).fill(-1);
+  const eu = new Int32Array(n - 1), ev = new Int32Array(n - 1), ew = new Float64Array(n - 1);
+  best[0] = 0;
+  let cur = 0, m = 0;
+  for (let it = 0; it < n; it++) {
+    inT[cur] = 1;
+    if (from[cur] >= 0) { eu[m] = from[cur]; ev[m] = cur; ew[m] = Math.sqrt(best[cur]); m++; }
+    const cx = xs[cur], cy = ys[cur];
+    let nxt = -1, nb = Infinity;
+    for (let j = 0; j < n; j++) {
+      if (inT[j]) continue;
+      const dx = xs[j] - cx, dy = ys[j] - cy, d = dx * dx + dy * dy;
+      if (d < best[j]) { best[j] = d; from[j] = cur; }
+      if (best[j] < nb) { nb = best[j]; nxt = j; }
+    }
+    if (nxt < 0) break;
+    cur = nxt;
+  }
+  const idx = Array.from({ length: m }, (_, i) => i).sort((a, b) => ew[a] - ew[b]);
+  return { u: Int32Array.from(idx, i => eu[i]), v: Int32Array.from(idx, i => ev[i]), w: Float64Array.from(idx, i => ew[i]) };
+}
+
+function makeUF(n) {
+  const p = new Int32Array(n), s = new Int32Array(n).fill(1);
+  for (let i = 0; i < n; i++) p[i] = i;
+  const find = x => { while (p[x] !== x) { p[x] = p[p[x]]; x = p[x]; } return x; };
+  return { p, s, find };
+}
+
+function events(n, T) {
+  const uf = makeUF(n), cnt = new Int32Array(n + 1);
+  cnt[1] = n;
+  const G = new Int32Array(n - 1), S = new Int32Array(n - 1), minSide = new Int32Array(n - 1);
+  let largest = 1, second = 1;
+  for (let i = 0; i < T.w.length; i++) {
+    const a = uf.find(T.u[i]), b = uf.find(T.v[i]);
+    const sa = uf.s[a], sb = uf.s[b], s = sa + sb;
+    minSide[i] = Math.min(sa, sb);
+    cnt[sa]--; cnt[sb]--; cnt[s]++;
+    if (sa >= sb) { uf.p[b] = a; uf.s[a] = s; } else { uf.p[a] = b; uf.s[b] = s; }
+    const oldL = largest;
+    largest = Math.max(largest, s);
+    if (cnt[largest] >= 2) second = largest;
+    else {
+      second = Math.max(...[second, oldL, s].filter(v => v < largest), 0);
+      while (second > 0 && cnt[second] === 0) second--;
+    }
+    G[i] = largest; S[i] = second;
+  }
+  const bridges = [];
+  for (let i = 0; i < T.w.length; i++) if (minSide[i] >= Math.max(8, 0.04 * n)) bridges.push(i);
+  return { w: T.w, G, S, bridges };
+}
+
+function curveAt(E, r, n) {
+  let lo = 0, hi = E.w.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (E.w[mid] <= r) lo = mid + 1; else hi = mid; }
+  return lo === 0 ? [1 / n, 1 / n] : [E.G[lo - 1] / n, E.S[lo - 1] / n];
+}
+
+function analyse(grid, Gm, Sm) {
+  const L = grid.length, lr = grid.map(Math.log), w = 8, dG = new Float64Array(L);
+  for (let i = 0; i < L; i++) {
+    const a = Math.max(0, i - w), b = Math.min(L - 1, i + w);
+    dG[i] = (Gm[b] - Gm[a]) / (lr[b] - lr[a]);
+  }
+  const jumps = [], win = 38;
+  for (let i = 1; i < L - 1; i++) {
+    if (dG[i] < 0.28) continue;
+    let isMax = true;
+    for (let j = Math.max(0, i - win); j <= Math.min(L - 1, i + win); j++) if (dG[j] > dG[i] || (dG[j] === dG[i] && j < i)) { isMax = false; break; }
+    if (isMax) jumps.push(grid[i]);
+  }
+  let best = 0, cur = 0, plat = null;
+  for (let i = 0; i < L; i++) {
+    const f = Math.abs(dG[i]) < 0.05 && Gm[i] > 0.1 && Gm[i] < 0.9;
+    cur = f ? cur + 1 : 0;
+    if (cur > best) { best = cur; plat = [i - cur + 1, i]; }
+  }
+  const plateau = plat && lr[plat[1]] - lr[plat[0]] > Math.log(1.5) ? [grid[plat[0]], grid[plat[1]], Gm[Math.floor((plat[0] + plat[1]) / 2)]] : null;
+  let sgIdx = 0;
+  for (let i = 1; i < L; i++) if (Sm[i] > Sm[sgIdx]) sgIdx = i;
+  return { jumps, plateau, sgccPeak: [grid[sgIdx], Sm[sgIdx]] };
+}
+
+function buildEdgeCum(P, rMin, rMax) {
+  const { xs, ys, n } = P, B = 1001, bins = new Uint32Array(B);
+  const l0 = 2 * Math.log(rMin), inv = 1000 / (2 * Math.log(rMax / rMin));
+  for (let i = 0; i < n; i++) {
+    const xi = xs[i], yi = ys[i];
+    for (let j = i + 1; j < n; j++) {
+      const dx = xi - xs[j], dy = yi - ys[j], d2 = dx * dx + dy * dy;
+      if (d2 <= 0) { bins[0]++; continue; }
+      const b = Math.ceil((Math.log(d2) - l0) * inv);
+      if (b <= 0) bins[0]++; else if (b < B) bins[b]++;
+    }
+  }
+  for (let k = 1; k < B; k++) bins[k] += bins[k - 1];
+  return bins;
+}
+
+function extractEdgesFast(P, bbox, eps, maxDraw) {
+  const { xs, ys, n } = P, [x0, x1, y0, y1] = bbox;
+  const cs = Math.max(eps, (x1 - x0) / 120, 1e-6);
+  const gw = Math.min(256, Math.max(1, Math.ceil((x1 - x0) / cs) + 1));
+  const gh = Math.min(256, Math.max(1, Math.ceil((y1 - y0) / cs) + 1));
+  const cellW = (x1 - x0 + 1e-9) / gw, cellH = (y1 - y0 + 1e-9) / gh;
+  const head = new Int32Array(gw * gh).fill(-1), next = new Int32Array(n);
+  for (let i = 0; i < n; i++) {
+    const cx = Math.min(gw - 1, Math.max(0, (xs[i] - x0) / cellW | 0));
+    const cy = Math.min(gh - 1, Math.max(0, (ys[i] - y0) / cellH | 0));
+    const c = cy * gw + cx;
+    next[i] = head[c]; head[c] = i;
+  }
+  const rx = Math.ceil(eps / cellW), ry = Math.ceil(eps / cellH), e2 = eps * eps;
+  const eu = new Int32Array(maxDraw), ev = new Int32Array(maxDraw);
+  let cnt = 0;
+  for (let cy = 0; cy < gh; cy++) {
+    for (let cx = 0; cx < gw; cx++) {
+      const c0 = cy * gw + cx, xhi = Math.min(gw - 1, cx + rx), yhi = Math.min(gh - 1, cy + ry);
+      for (let i = head[c0]; i >= 0; i = next[i]) {
+        const xi = xs[i], yi = ys[i];
+        for (let ny = cy; ny <= yhi; ny++) {
+          const nx0 = ny === cy ? cx : Math.max(0, cx - rx);
+          for (let nx = nx0; nx <= xhi; nx++) {
+            const c1 = ny * gw + nx;
+            for (let j = (c1 === c0 ? next[i] : head[c1]); j >= 0; j = next[j]) {
+              const dx = xi - xs[j], dy = yi - ys[j];
+              if (dx * dx + dy * dy <= e2) {
+                if (cnt < maxDraw) { eu[cnt] = i; ev[cnt] = j; }
+                cnt++;
+                if (cnt > maxDraw) return { eu, ev, cnt, capped: true };
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return { eu: eu.subarray(0, cnt), ev: ev.subarray(0, cnt), cnt, capped: false };
+}
+
+// When E > maxDraw, keep all MST edges <= eps plus a deterministic uniform sample of ~target edges
+function sampleEdgesDense(P, T, mstCut, eps, estE, target) {
+  const { xs, ys, n } = P, e2 = eps * eps;
+  const eu = new Int32Array(mstCut + target + n), ev = new Int32Array(mstCut + target + n);
+  let cnt = 0;
+  for (let i = 0; i < mstCut; i++) { eu[cnt] = T.u[i]; ev[cnt] = T.v[i]; cnt++; }
+  const pairStep = Math.max(1, Math.floor(estE / target));
+  for (let i = 0; i < n && cnt < mstCut + target; i++) {
+    const xi = xs[i], yi = ys[i];
+    for (let j = i + 1 + ((i * 17) % pairStep); j < n; j += pairStep) {
+      const dx = xi - xs[j], dy = yi - ys[j];
+      if (dx * dx + dy * dy <= e2) {
+        eu[cnt] = i; ev[cnt] = j; cnt++;
+        if (cnt >= mstCut + target) break;
+      }
+    }
+  }
+  return { eu: eu.subarray(0, cnt), ev: ev.subarray(0, cnt), cnt, sampled: true };
+}
+
+function simulate(dist, n, runs, seed0) {
+  const Ps = [], Es = [];
+  let T0 = null;
+  for (let r = 0; r < runs; r++) {
+    const P = sample(dist, n, seed0 + 7919 * r), T = mst(P);
+    if (r === 0) T0 = T;
+    Ps.push(P); Es.push(events(n, T));
+  }
+  let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
+  for (const P of Ps) for (let i = 0; i < n; i++) {
+    if (P.xs[i] < xmin) xmin = P.xs[i]; if (P.xs[i] > xmax) xmax = P.xs[i];
+    if (P.ys[i] < ymin) ymin = P.ys[i]; if (P.ys[i] > ymax) ymax = P.ys[i];
+  }
+  const diam = Math.hypot(xmax - xmin, ymax - ymin);
+  const L = 520, grid = new Float64Array(L), Gm = new Float64Array(L), Sm = new Float64Array(L);
+  const G0 = new Float64Array(L), S0 = new Float64Array(L);
+  for (let i = 0; i < L; i++) grid[i] = diam * Math.pow(10, -3.3 + (Math.log10(0.5) + 3.3) * i / (L - 1));
+  for (let r = 0; r < runs; r++) {
+    const E = Es[r];
+    for (let i = 0; i < L; i++) {
+      const [g, s] = curveAt(E, grid[i], n);
+      Gm[i] += g / runs; Sm[i] += s / runs;
+      if (r === 0) { G0[i] = g; S0[i] = s; }
+    }
+  }
+  let bx0 = Infinity, bx1 = -Infinity, by0 = Infinity, by1 = -Infinity;
+  for (let i = 0; i < n; i++) {
+    if (Ps[0].xs[i] < bx0) bx0 = Ps[0].xs[i]; if (Ps[0].xs[i] > bx1) bx1 = Ps[0].xs[i];
+    if (Ps[0].ys[i] < by0) by0 = Ps[0].ys[i]; if (Ps[0].ys[i] > by1) by1 = Ps[0].ys[i];
+  }
+  return {
+    dist, runs, P: Ps[0], E: Es[0], T: T0, diam, bbox: [bx0, bx1, by0, by1],
+    grid: Array.from(grid), Gm, Sm, G0, S0,
+    edgeCum: buildEdgeCum(Ps[0], grid[0], grid[L - 1]),
+    ...analyse(Array.from(grid), Gm, Sm),
+  };
+}
+
+const COLORS = ["#d62728", "#1f77b4", "#2ca02c", "#9467bd", "#ff7f0e", "#8c564b"];
+const $ = id => document.getElementById(id);
+let S = null, curDist = "blobs_equal", rafPending = false, playRaf = 0, hoverNode = -1, chartHoverEps = null;
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove("show"), 2000);
+}
+function epsFromSlider() {
+  return S.grid[0] * Math.pow(S.grid[S.grid.length - 1] / S.grid[0], +$("eps").value / 1000);
+}
+function sliderFromEps(e) {
+  const t = Math.log(e / S.grid[0]) / Math.log(S.grid[S.grid.length - 1] / S.grid[0]);
+  $("eps").value = Math.round(1000 * Math.min(1, Math.max(0, t)));
+}
+function fitCanvas(c) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5), r = c.getBoundingClientRect();
+  const w = Math.max(10, Math.round(r.width * dpr)), h = Math.max(10, Math.round(r.height * dpr));
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [ctx, r.width, r.height];
+}
+function scheduleUpdate() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; update(); });
+}
+function criticalPoints() {
+  if (!S) return [];
+  const pts = [...S.jumps, S.sgccPeak[0]];
+  if (S.plateau) pts.push(S.plateau[0], Math.sqrt(S.plateau[0] * S.plateau[1]), S.plateau[1]);
+  pts.sort((a, b) => a - b);
+  return pts.filter((v, i) => i === 0 || Math.abs(Math.log(v / pts[i - 1])) > 0.06);
+}
+
+function run(targetPct = null) {
+  stopPlay();
+  const dist = curDist, n = +$("n").value, runs = +$("runs").value;
+  document.querySelectorAll("#presetBar .pill").forEach(b => b.classList.toggle("active", b.dataset.dist === dist));
+  $("distHint").textContent = "💡 " + (DIST_META[dist] || DIST_META.uniform);
+  $("status").textContent = "Computing…";
+  hoverNode = -1; $("scatterHud").style.display = "none";
+  requestAnimationFrame(() => {
+    const t0 = performance.now();
+    const seed = (+$("regen").dataset.seed || 1);
+    S = simulate(dist, n, runs, seed);
+    $("status").textContent = `${runs} MST run${runs > 1 ? "s" : ""} · ${(performance.now() - t0).toFixed(0)} ms`;
+    const pct = v => (100 * v / S.diam).toFixed(2);
+    const jBtns = S.jumps.map((v, i) => `<button class="chip" data-eps="${v}">⚡ Jump${S.jumps.length > 1 ? " #" + (i + 1) : ""} @ ${pct(v)}%</button>`).join("");
+    const sgBtn = `<button class="chip sg" data-eps="${S.sgccPeak[0]}">▲ SGCC peak ${S.sgccPeak[1].toFixed(2)} @ ${pct(S.sgccPeak[0])}%</button>`;
+    const plBtn = S.plateau
+      ? `<button class="chip pl" data-eps="${Math.sqrt(S.plateau[0] * S.plateau[1])}">🎯 Plateau ${pct(S.plateau[0])}%–${pct(S.plateau[1])}% (GCC≈${S.plateau[2].toFixed(2)}, ${(S.plateau[1] / S.plateau[0]).toFixed(1)}× wide)</button>`
+      : `<span>No plateau (no single global ε separates clusters)</span>`;
+    $("chips").innerHTML = `<span>Jump to:</span>${jBtns}${sgBtn}${plBtn}`;
+    $("chips").querySelectorAll("button[data-eps]").forEach(b => b.addEventListener("click", () => {
+      stopPlay(); sliderFromEps(+b.dataset.eps); scheduleUpdate();
+    }));
+    if (targetPct !== null) sliderFromEps((targetPct / 100) * S.diam);
+    else if (S.plateau) sliderFromEps(Math.sqrt(S.plateau[0] * S.plateau[1]));
+    else if (S.jumps.length) sliderFromEps(S.jumps[0]);
+    update();
+  });
+}
+
+function update() {
+  if (!S) return;
+  const sl = +$("eps").value, eps = epsFromSlider(), { xs, ys, n } = S.P, T = S.T;
+  const uf = makeUF(n);
+  let mstCut = 0;
+  while (mstCut < T.w.length && T.w[mstCut] <= eps) {
+    const a = uf.find(T.u[mstCut]), b = uf.find(T.v[mstCut]);
+    if (a !== b) { if (uf.s[a] < uf.s[b]) { uf.p[a] = b; uf.s[b] += uf.s[a]; } else { uf.p[b] = a; uf.s[a] += uf.s[b]; } }
+    mstCut++;
+  }
+  const root = new Int32Array(n), sizes = new Map();
+  for (let i = 0; i < n; i++) { root[i] = uf.find(i); sizes.set(root[i], (sizes.get(root[i]) || 0) + 1); }
+  const ranked = [...sizes.entries()].sort((a, b) => b[1] - a[1]);
+  const rank = new Map(ranked.map(([r], i) => [r, i]));
+
+  const maxDraw = 40000;
+  let E = S.edgeCum[sl], edgeData = null;
+  if ($("showEdges").checked) {
+    if (E <= maxDraw) {
+      edgeData = extractEdgesFast(S.P, S.bbox, eps, maxDraw);
+      if (!edgeData.capped) E = edgeData.cnt;
+      else edgeData = sampleEdgesDense(S.P, T, mstCut, eps, E, 24000);
+    } else {
+      edgeData = sampleEdgesDense(S.P, T, mstCut, eps, E, 24000);
+    }
+  }
+
+  const [ctx, W, H] = fitCanvas($("scatter"));
+  const [x0, x1, y0, y1] = S.bbox, span = Math.max(x1 - x0, y1 - y0) * 1.08;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, sc = Math.min(W, H) / span;
+  const X = x => W / 2 + (x - cx) * sc, Y = y => H / 2 - (y - cy) * sc;
+  $("scatter")._proj = { X, Y, sc, root, rank, sizes };
+  ctx.clearRect(0, 0, W, H);
+
+  if (edgeData) {
+    const dc = edgeData.cnt;
+    ctx.lineWidth = dc < 3000 ? 1.05 : dc < 15000 ? 0.8 : 0.6;
+    const alpha = dc < 3000 ? "99" : dc < 15000 ? "68" : "40";
+    for (let rk = 6; rk >= 0; rk--) {
+      ctx.beginPath(); let any = false;
+      for (let k = 0; k < dc; k++) {
+        if (Math.min(6, rank.get(root[edgeData.eu[k]])) !== rk) continue;
+        any = true;
+        ctx.moveTo(X(xs[edgeData.eu[k]]), Y(ys[edgeData.eu[k]]));
+        ctx.lineTo(X(xs[edgeData.ev[k]]), Y(ys[edgeData.ev[k]]));
+      }
+      if (any) { ctx.strokeStyle = (rk < 6 ? COLORS[rk] : "#9aa2b1") + alpha; ctx.stroke(); }
+    }
+    if (edgeData.sampled) {
+      ctx.fillStyle = "#7a828e"; ctx.font = "11.5px -apple-system, sans-serif";
+      ctx.fillText(`${E.toLocaleString()} edges total (rendering ${(dc / 1000).toFixed(1)}k uniform sample)`, 10, 17);
+    }
+  }
+
+  if ($("showMST").checked) {
+    ctx.beginPath();
+    for (let i = 0; i < mstCut; i++) {
+      ctx.moveTo(X(xs[T.u[i]]), Y(ys[T.u[i]]));
+      ctx.lineTo(X(xs[T.v[i]]), Y(ys[T.v[i]]));
+    }
+    ctx.strokeStyle = "rgba(31,35,41,0.52)"; ctx.lineWidth = 1.05; ctx.stroke();
+
+    ctx.save();
+    ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = "#f57c00";
+    ctx.fillStyle = "#c75b00"; ctx.font = "600 11px -apple-system, sans-serif";
+    let shown = 0;
+    for (const bi of S.E.bridges) {
+      if (T.w[bi] <= eps || shown >= 5) continue;
+      const ux = X(xs[T.u[bi]]), uy = Y(ys[T.u[bi]]), vx = X(xs[T.v[bi]]), vy = Y(ys[T.v[bi]]);
+      ctx.beginPath(); ctx.moveTo(ux, uy); ctx.lineTo(vx, vy); ctx.stroke();
+      ctx.fillText(`${(100 * T.w[bi] / S.diam).toFixed(2)}%`, (ux + vx) / 2 + 4, (uy + vy) / 2 - 4);
+      shown++;
+    }
+    ctx.restore();
+  }
+
+  const rad = n > 2600 ? 1.5 : n > 1200 ? 1.85 : 2.3;
+  for (let rk = 6; rk >= 0; rk--) {
+    ctx.beginPath(); let any = false;
+    for (let i = 0; i < n; i++) {
+      if (Math.min(6, rank.get(root[i])) !== rk) continue;
+      any = true;
+      const px = X(xs[i]), py = Y(ys[i]);
+      ctx.moveTo(px + rad, py); ctx.arc(px, py, rad, 0, 2 * Math.PI);
+    }
+    if (any) { ctx.fillStyle = rk < 6 ? COLORS[rk] : "#c3c7cf"; ctx.fill(); }
+  }
+
+  if (hoverNode >= 0 && hoverNode < n) {
+    const hx = xs[hoverNode], hy = ys[hoverNode], px = X(hx), py = Y(hy), rPx = eps * sc, e2 = eps * eps;
+    ctx.save();
+    ctx.fillStyle = "rgba(51,112,255,0.10)"; ctx.strokeStyle = "#3370ff"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(px, py, rPx, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    let deg = 0;
+    ctx.beginPath();
+    for (let j = 0; j < n; j++) {
+      if (j === hoverNode) continue;
+      const dx = xs[j] - hx, dy = ys[j] - hy;
+      if (dx * dx + dy * dy <= e2) {
+        deg++;
+        if (deg <= 400) { ctx.moveTo(px, py); ctx.lineTo(X(xs[j]), Y(ys[j])); }
+      }
+    }
+    ctx.strokeStyle = "rgba(51,112,255,0.45)"; ctx.lineWidth = 0.9; ctx.stroke();
+    ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(px, py, rad + 2.2, 0, 2 * Math.PI); ctx.fill();
+    ctx.restore();
+    const rk = rank.get(root[hoverNode]) + 1, cs = sizes.get(root[hoverNode]);
+    const hud = $("scatterHud");
+    hud.style.display = "block";
+    hud.textContent = `Node #${hoverNode} · degree k = ${deg} · Comp #${rk} (${cs} pts, ${(100 * cs / n).toFixed(1)}%)`;
+  }
+
+  const rCap = Math.min(eps * sc, H * 0.28), cxp = W - 16 - rCap, cyp = 16 + rCap;
+  ctx.save();
+  ctx.fillStyle = "rgba(51,112,255,0.07)"; ctx.strokeStyle = "#3370ff"; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(cxp, cyp, Math.max(1.5, rCap), 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#2448a8"; ctx.font = "600 11.5px -apple-system, sans-serif";
+  ctx.textAlign = "center"; ctx.fillText("ε", cxp, cyp + 4);
+  ctx.restore();
+
+  const g = ranked[0][1] / n, s2 = ranked.length > 1 ? ranked[1][1] / n : 0;
+  $("epsv").textContent = `${eps.toFixed(4)} (${(100 * eps / S.diam).toFixed(2)}% D)`;
+  $("k_eps").textContent = (100 * eps / S.diam).toFixed(2) + "%";
+  $("k_deg").textContent = (2 * E / n).toFixed(2);
+  $("k_gcc").textContent = g.toFixed(3);
+  $("k_sgcc").textContent = s2.toFixed(3);
+  $("k_ncomp").textContent = ranked.length.toLocaleString();
+  $("k_edges").textContent = E.toLocaleString();
+  drawChart(eps, g, s2);
+}
+
+function drawChart(eps, gCur, sCur) {
+  const c = $("chart"), [ctx, W, H] = fitCanvas(c);
+  const m = { l: 44, r: 44, t: 14, b: 34 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const g0 = Math.log(S.grid[0]), g1 = Math.log(S.grid[S.grid.length - 1]);
+  const X = r => m.l + pw * (Math.log(r) - g0) / (g1 - g0);
+  const smax = Math.max(0.02, ...S.Sm, ...S.S0) * 1.1;
+  const Yg = v => m.t + ph * (1 - v), Ys = v => m.t + ph * (1 - Math.min(1, v / smax));
+  c._map = { m, pw, g0, g1 };
+  ctx.clearRect(0, 0, W, H);
+
+  if (S.plateau) {
+    const xL = X(S.plateau[0]), xR = X(S.plateau[1]);
+    ctx.fillStyle = "rgba(246, 232, 140, 0.55)"; ctx.fillRect(xL, m.t, xR - xL, ph);
+    if (xR - xL > 46) {
+      ctx.save(); ctx.fillStyle = "#7a6400"; ctx.font = "600 11px -apple-system, sans-serif";
+      ctx.textAlign = "center"; ctx.fillText("Plateau", (xL + xR) / 2, m.t + 14); ctx.restore();
+    }
+  }
+  ctx.strokeStyle = "#eceff4"; ctx.lineWidth = 1; ctx.fillStyle = "#646a73"; ctx.font = "11px -apple-system, sans-serif";
+  for (let e = -3; e <= 2; e++) for (const k of [1, 2, 5]) {
+    const pct = k * Math.pow(10, e), r = pct / 100 * S.diam;
+    if (r < S.grid[0] || r > S.grid[S.grid.length - 1]) continue;
+    ctx.beginPath(); ctx.moveTo(X(r), m.t); ctx.lineTo(X(r), m.t + ph); ctx.stroke();
+    if (k === 1 || k === 5) ctx.fillText(pct >= 1 ? pct.toFixed(0) : String(+pct.toPrecision(1)), X(r) - 8, H - m.b + 14);
+  }
+  ctx.save(); ctx.textAlign = "center";
+  ctx.fillText("ε (% of point-set diameter D, log scale)", m.l + pw / 2, H - 4);
+  ctx.restore();
+  for (let v = 0; v <= 1.001; v += 0.25) {
+    ctx.beginPath(); ctx.moveTo(m.l, Yg(v)); ctx.lineTo(m.l + pw, Yg(v)); ctx.stroke();
+    ctx.fillStyle = "#9e7107"; ctx.fillText(v.toFixed(2), 6, Yg(v) + 4);
+    ctx.fillStyle = "#1f7a3a"; ctx.fillText((v * smax).toFixed(2), m.l + pw + 5, Yg(v) + 4);
+  }
+
+  const vline = (r, col, dash, lw = 1.4) => {
+    if (!r || r < S.grid[0] || r > S.grid[S.grid.length - 1]) return;
+    ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(X(r), m.t); ctx.lineTo(X(r), m.t + ph); ctx.stroke(); ctx.restore();
+  };
+  for (const j of S.jumps) vline(j, "#444", [5, 4], 1.1);
+
+  const line = (arr, Y, col, lw) => {
+    ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.beginPath();
+    S.grid.forEach((r, i) => i ? ctx.lineTo(X(r), Y(arr[i])) : ctx.moveTo(X(r), Y(arr[i])));
+    ctx.stroke();
+  };
+  if (S.runs > 1) {
+    line(S.S0, Ys, "rgba(31,122,58,0.28)", 1.1);
+    line(S.G0, Yg, "rgba(184,134,11,0.30)", 1.2);
+  }
+  line(S.Sm, Ys, "#1f7a3a", 1.75);
+  line(S.Gm, Yg, "#b8860b", 2.5);
+
+  const xe = X(eps);
+  ctx.strokeStyle = "#3370ff"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(xe, m.t); ctx.lineTo(xe, m.t + ph); ctx.stroke();
+  ctx.fillStyle = "#b8860b"; ctx.beginPath(); ctx.arc(xe, Yg(gCur), 4.2, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = "#1f7a3a"; ctx.beginPath(); ctx.arc(xe, Ys(sCur), 3.8, 0, 2 * Math.PI); ctx.fill();
+
+  if (chartHoverEps && chartHoverEps >= S.grid[0] && chartHoverEps <= S.grid[S.grid.length - 1]) {
+    const xh = X(chartHoverEps);
+    const idx = Math.min(S.grid.length - 1, Math.max(0, Math.round((Math.log(chartHoverEps) - g0) / (g1 - g0) * (S.grid.length - 1))));
+    vline(chartHoverEps, "rgba(31,35,41,0.35)", [2, 2], 1);
+    const txt = `ε=${(100 * chartHoverEps / S.diam).toFixed(2)}%  GCC=${S.Gm[idx].toFixed(2)}  SGCC=${S.Sm[idx].toFixed(2)}`;
+    ctx.font = "11.5px -apple-system, sans-serif";
+    const tw = ctx.measureText(txt).width + 12, bx = Math.min(m.l + pw - tw - 4, Math.max(m.l + 4, xh + 6));
+    ctx.fillStyle = "rgba(25,30,42,0.86)"; ctx.beginPath(); ctx.roundRect(bx, m.t + 6, tw, 22, 5); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.fillText(txt, bx + 6, m.t + 21);
+  }
+  ctx.strokeStyle = "#aeb5c0"; ctx.lineWidth = 1; ctx.strokeRect(m.l, m.t, pw, ph);
+}
+
+function epsAtPointer(ev) {
+  const c = $("chart"), mp = c._map; if (!mp) return null;
+  const x = ev.clientX - c.getBoundingClientRect().left;
+  const t = Math.min(1, Math.max(0, (x - mp.m.l) / mp.pw));
+  return Math.exp(mp.g0 + t * (mp.g1 - mp.g0));
+}
+let chartDrag = false;
+$("chart").addEventListener("pointerdown", e => {
+  stopPlay(); chartDrag = true; $("chart").setPointerCapture(e.pointerId);
+  const r = epsAtPointer(e); if (r) { sliderFromEps(r); scheduleUpdate(); }
+});
+$("chart").addEventListener("pointermove", e => {
+  chartHoverEps = epsAtPointer(e);
+  if (chartDrag && chartHoverEps) sliderFromEps(chartHoverEps);
+  scheduleUpdate();
+});
+$("chart").addEventListener("pointerup", () => { chartDrag = false; });
+$("chart").addEventListener("pointerleave", () => { chartHoverEps = null; scheduleUpdate(); });
+
+$("scatter").addEventListener("pointermove", e => {
+  const pr = $("scatter")._proj; if (!pr || !S) return;
+  const rect = $("scatter").getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const { xs, ys, n } = S.P;
+  let best = -1, bd = 18 * 18;
+  for (let i = 0; i < n; i++) {
+    const dx = pr.X(xs[i]) - mx, dy = pr.Y(ys[i]) - my, d = dx * dx + dy * dy;
+    if (d < bd) { bd = d; best = i; }
+  }
+  if (best !== hoverNode) { hoverNode = best; scheduleUpdate(); }
+});
+$("scatter").addEventListener("pointerleave", () => {
+  if (hoverNode !== -1) { hoverNode = -1; $("scatterHud").style.display = "none"; scheduleUpdate(); }
+});
+
+function stopPlay() {
+  if (playRaf) { cancelAnimationFrame(playRaf); playRaf = 0; $("play").textContent = "▶ Sweep ε"; }
+}
+$("play").addEventListener("click", () => {
+  if (playRaf) { stopPlay(); return; }
+  if (+$("eps").value >= 995) $("eps").value = 0;
+  $("play").textContent = "⏸ Pause";
+  let cur = +$("eps").value, last = performance.now();
+  const tick = now => {
+    cur += (now - last) * 0.13; last = now;
+    if (cur >= 1000) { $("eps").value = 1000; update(); stopPlay(); return; }
+    $("eps").value = Math.round(cur); update();
+    playRaf = requestAnimationFrame(tick);
+  };
+  playRaf = requestAnimationFrame(tick);
+});
+
+function stepCrit(dir) {
+  stopPlay();
+  const pts = criticalPoints(); if (!pts.length) return;
+  const cur = epsFromSlider();
+  const pick = dir > 0 ? (pts.find(p => p > cur * 1.03) || pts[0]) : ([...pts].reverse().find(p => p < cur * 0.97) || pts[pts.length - 1]);
+  sliderFromEps(pick); scheduleUpdate();
+}
+$("prevCrit").addEventListener("click", () => stepCrit(-1));
+$("nextCrit").addEventListener("click", () => stepCrit(1));
+$("eps").addEventListener("input", () => { stopPlay(); scheduleUpdate(); });
+$("showEdges").addEventListener("change", scheduleUpdate);
+$("showMST").addEventListener("change", scheduleUpdate);
+$("n").addEventListener("input", () => { $("nv").textContent = $("n").value; });
+$("n").addEventListener("change", () => run());
+$("runs").addEventListener("change", () => run());
+$("regen").addEventListener("click", () => { $("regen").dataset.seed = (+$("regen").dataset.seed || 1) + 101; run(); });
+document.querySelectorAll("#presetBar .pill").forEach(b => b.addEventListener("click", () => {
+  curDist = b.dataset.dist; run();
+}));
+$("shareBtn").addEventListener("click", () => {
+  const pct = (100 * epsFromSlider() / S.diam).toFixed(2);
+  history.replaceState(null, "", `#dist=${curDist}&n=${$("n").value}&eps=${pct}`);
+  navigator.clipboard?.writeText(location.href);
+  toast("Link copied to clipboard");
+});
+
+let bootEps = null;
+if (location.hash.includes("dist=")) {
+  const q = new URLSearchParams(location.hash.slice(1));
+  if (q.get("dist") && GEN[q.get("dist")]) curDist = q.get("dist");
+  if (q.get("n")) { const nv = Math.min(4000, Math.max(200, +q.get("n"))); $("n").value = nv; $("nv").textContent = nv; }
+  if (q.get("eps")) bootEps = +q.get("eps");
+}
+window.addEventListener("resize", scheduleUpdate);
+run(bootEps);
+</script>
+</body>
+</html>
