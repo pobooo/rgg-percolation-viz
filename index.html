@@ -157,6 +157,10 @@
         <canvas id="scatter"></canvas>
         <div class="hud" id="scatterHud"></div>
         <div class="legend">Component rank: <b style="color:#d62728">#1 (GCC)</b> · <b style="color:#1f77b4">#2 (SGCC)</b> · <b style="color:#2ca02c">#3</b> · <b style="color:#9467bd">#4</b> · <b style="color:#ff7f0e">#5</b> · <b style="color:#8c564b">#6</b> · gray = smaller · top-right circle = <i>ε</i> scale</div>
+        <div class="legend" id="mstLegend" style="display:none; margin-top:4px; padding-top:4px; border-top:1px dashed #e5e8ef; color:#3d434d">
+          <i style="background:rgba(31,35,41,0.65); margin-left:0"></i>Active MST edges (≤ <i>ε</i>)
+          <i style="background:none; height:0; border-top:2px dashed #f57c00"></i><b>Upcoming bridge (&gt; <i>ε</i>)</b>: shortest gap between two major components — they merge once <i>ε</i> reaches the labeled <b>% <i>D</i></b>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-head"><b>Percolation Curves GCC(<i>ε</i>) / SGCC(<i>ε</i>)</b><span>Click or drag on the chart to scrub <i>ε</i></span></div>
@@ -580,7 +584,9 @@ function update() {
     }
   }
 
-  if ($("showMST").checked) {
+  const showMst = $("showMST").checked;
+  $("mstLegend").style.display = showMst ? "block" : "none";
+  if (showMst) {
     ctx.beginPath();
     for (let i = 0; i < mstCut; i++) {
       ctx.moveTo(X(xs[T.u[i]]), Y(ys[T.u[i]]));
@@ -589,15 +595,27 @@ function update() {
     ctx.strokeStyle = "rgba(31,35,41,0.52)"; ctx.lineWidth = 1.05; ctx.stroke();
 
     ctx.save();
-    ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = "#f57c00";
-    ctx.fillStyle = "#c75b00"; ctx.font = "600 11px -apple-system, sans-serif";
-    let shown = 0;
-    for (const bi of S.E.bridges) {
-      if (T.w[bi] <= eps || shown >= 5) continue;
+    ctx.font = "600 11px -apple-system, sans-serif";
+    const pending = S.E.bridges.filter(bi => T.w[bi] > eps).sort((a, b) => T.w[b] - T.w[a]).slice(0, 4);
+    for (const bi of pending) {
       const ux = X(xs[T.u[bi]]), uy = Y(ys[T.u[bi]]), vx = X(xs[T.v[bi]]), vy = Y(ys[T.v[bi]]);
+      ctx.save();
+      ctx.setLineDash([5, 4]); ctx.lineWidth = 2; ctx.strokeStyle = "#f57c00";
       ctx.beginPath(); ctx.moveTo(ux, uy); ctx.lineTo(vx, vy); ctx.stroke();
-      ctx.fillText(`${(100 * T.w[bi] / S.diam).toFixed(2)}%`, (ux + vx) / 2 + 4, (uy + vy) / 2 - 4);
-      shown++;
+      ctx.restore();
+      ctx.strokeStyle = "#e65100"; ctx.lineWidth = 1.5; ctx.fillStyle = "#fff";
+      for (const [px, py] of [[ux, uy], [vx, vy]]) {
+        ctx.beginPath(); ctx.arc(px, py, 3.6, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+      }
+      if (Math.hypot(ux - vx, uy - vy) >= 16) {
+        const lbl = `merge @ ε=${(100 * T.w[bi] / S.diam).toFixed(2)}% D`;
+        const tw = ctx.measureText(lbl).width + 10;
+        const mx = Math.min(W - tw / 2 - 4, Math.max(tw / 2 + 4, (ux + vx) / 2));
+        const my = Math.min(H - 12, Math.max(12, (uy + vy) / 2));
+        ctx.fillStyle = "rgba(255,248,238,0.92)"; ctx.strokeStyle = "rgba(245,124,0,0.45)"; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.roundRect(mx - tw / 2, my - 9, tw, 17, 4); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = "#b85000"; ctx.textAlign = "center"; ctx.fillText(lbl, mx, my + 3.5);
+      }
     }
     ctx.restore();
   }
