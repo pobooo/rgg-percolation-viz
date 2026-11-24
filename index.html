@@ -638,12 +638,21 @@ function update() {
     hud.textContent = `Node #${hoverNode} · degree k = ${deg} · Component #${rk} (${cs} nodes, ${(100 * cs / n).toFixed(1)}%)`;
   }
 
-  const rCap = Math.min(eps * sc, H * 0.28), cxp = W - 16 - rCap, cyp = 16 + rCap;
+  const rTrue = Math.max(1.5, eps * sc);
+  const cxp = Math.max(W * 0.78, W - 14 - rTrue), cyp = Math.min(H * 0.22, 14 + rTrue);
   ctx.save();
-  ctx.fillStyle = "rgba(51,112,255,0.07)"; ctx.strokeStyle = "#3370ff"; ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(cxp, cyp, Math.max(1.5, rCap), 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "rgba(51,112,255,0.06)"; ctx.strokeStyle = "#3370ff"; ctx.lineWidth = 1.25;
+  ctx.beginPath(); ctx.arc(cxp, cyp, rTrue, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
   ctx.fillStyle = "#2448a8"; ctx.font = "600 11.5px -apple-system, sans-serif";
-  ctx.textAlign = "center"; ctx.fillText("ε", cxp, cyp + 4);
+  if (rTrue <= 26) {
+    ctx.textAlign = "center"; ctx.fillText("ε", cxp, cyp + 4);
+  } else {
+    const ex = cxp - rTrue * Math.SQRT1_2, ey = cyp + rTrue * Math.SQRT1_2;
+    ctx.beginPath(); ctx.arc(cxp, cyp, 2.2, 0, 2 * Math.PI); ctx.fill();
+    ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = "rgba(36,72,168,0.65)"; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(cxp, cyp); ctx.lineTo(ex, ey); ctx.stroke(); ctx.restore();
+    ctx.textAlign = "center"; ctx.fillText("ε", (cxp + ex) / 2 - 5, (cyp + ey) / 2 - 4);
+  }
   ctx.restore();
 
   const g = ranked[0][1] / n, s2 = ranked.length > 1 ? ranked[1][1] / n : 0;
