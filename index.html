@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Percolation Phase Transitions in ε-Ball Random Geometric Graphs</title>
-<meta name="description" content="Interactive simulation of ε-ball random geometric graphs: connect pairs at distance ≤ ε and observe percolation transitions, plateaus, and cluster merging in GCC(ε) and SGCC(ε).">
+<meta name="description" content="Interactive simulation of ε-ball random geometric graphs: connect point pairs at distance ≤ ε and observe percolation transitions, plateaus, and cluster merging in the Giant Connected Component (GCC) and Second Giant Connected Component (SGCC).">
 <style>
   :root {
     --bg: #f5f7fb; --card: #ffffff; --ink: #1f2329; --muted: #646a73;
@@ -60,7 +60,7 @@
   .eps-box { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; }
   .eps-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .eps-row input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); cursor: pointer; }
-  .eps-readout { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; min-width: 185px; text-align: right; }
+  .eps-readout { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; min-width: 245px; text-align: right; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 7px; font-size: 12px; color: var(--muted); }
   .chip {
     font: inherit; font-size: 12px; border-radius: 6px; padding: 2px 8px; cursor: pointer;
@@ -110,7 +110,7 @@
 <div class="wrap">
   <header>
     <h1>Percolation Phase Transitions in <i>ε</i>-Ball Random Geometric Graphs</h1>
-    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i> · Explore phase transitions and cluster-separation plateaus in GCC(<i>ε</i>) &amp; SGCC(<i>ε</i>)</div>
+    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i> · Explore phase transitions and plateaus in the Giant Connected Component (GCC) &amp; Second Giant Connected Component (SGCC)</div>
   </header>
 
   <div class="card">
@@ -132,9 +132,9 @@
 
     <div class="controls">
       <label>Nodes <i>N</i> <input id="n" type="range" min="200" max="4000" step="100" value="1000"><b id="nv">1000</b></label>
-      <label>Curve avg <select id="runs"><option value="1">1 run (single)</option><option value="4" selected>4 runs (mean)</option><option value="8">8 runs (mean)</option></select></label>
+      <label>Curve average <select id="runs"><option value="1">1 run (single)</option><option value="4" selected>4 runs (mean)</option><option value="8">8 runs (mean)</option></select></label>
       <label><input id="showEdges" type="checkbox" checked> Show edges</label>
-      <label title="Solid = active MST edges (≤ ε); dashed orange = longest inter-cluster MST bridge edges (> ε)"><input id="showMST" type="checkbox"> MST backbone &amp; bridges</label>
+      <label title="Solid = active Minimum Spanning Tree (MST) edges (≤ ε); dashed orange = longest inter-cluster MST bridge edges (> ε)"><input id="showMST" type="checkbox"> Minimum Spanning Tree (MST) &amp; bridges</label>
       <button id="regen" class="btn primary">Resample</button>
       <button id="shareBtn" class="btn">🔗 Copy link</button>
     </div>
@@ -174,15 +174,15 @@
     <div class="kpi">
       <div><div class="v" id="k_eps">–</div><div class="k"><i>ε</i> (% of diameter <i>D</i>)</div></div>
       <div><div class="v" id="k_deg">–</div><div class="k">Mean degree ⟨<i>k</i>⟩ = 2<i>E</i>/<i>N</i></div></div>
-      <div><div class="v" id="k_gcc">–</div><div class="k">Largest comp. GCC / <i>N</i></div></div>
-      <div><div class="v" id="k_sgcc">–</div><div class="k">2nd largest SGCC / <i>N</i></div></div>
+      <div><div class="v" id="k_gcc">–</div><div class="k">Largest component GCC / <i>N</i></div></div>
+      <div><div class="v" id="k_sgcc">–</div><div class="k">Second largest SGCC / <i>N</i></div></div>
       <div><div class="v" id="k_ncomp">–</div><div class="k">Connected components</div></div>
       <div><div class="v" id="k_edges">–</div><div class="k">Active edges <i>E</i></div></div>
     </div>
   </div>
 
   <div class="foot">
-    <span>Exact connectivity events via Euclidean Minimum Spanning Tree · Computed locally in your browser</span>
+    <span>Exact connectivity events via the Euclidean Minimum Spanning Tree (EMST) · Computed locally in your browser</span>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -508,7 +508,7 @@ function run(targetPct = null) {
     const t0 = performance.now();
     const seed = (+$("regen").dataset.seed || 1);
     S = simulate(dist, n, runs, seed);
-    $("status").textContent = `${runs} MST run${runs > 1 ? "s" : ""} · ${(performance.now() - t0).toFixed(0)} ms`;
+    $("status").textContent = `${runs} realization${runs > 1 ? "s" : ""} · ${(performance.now() - t0).toFixed(0)} ms`;
     const pct = v => (100 * v / S.diam).toFixed(2);
     const jBtns = S.jumps.map((v, i) => `<button class="chip" data-eps="${v}">⚡ Jump${S.jumps.length > 1 ? " #" + (i + 1) : ""} @ ${pct(v)}%</button>`).join("");
     const sgBtn = `<button class="chip sg" data-eps="${S.sgccPeak[0]}">▲ SGCC peak ${S.sgccPeak[1].toFixed(2)} @ ${pct(S.sgccPeak[0])}%</button>`;
@@ -635,7 +635,7 @@ function update() {
     const rk = rank.get(root[hoverNode]) + 1, cs = sizes.get(root[hoverNode]);
     const hud = $("scatterHud");
     hud.style.display = "block";
-    hud.textContent = `Node #${hoverNode} · degree k = ${deg} · Comp #${rk} (${cs} pts, ${(100 * cs / n).toFixed(1)}%)`;
+    hud.textContent = `Node #${hoverNode} · degree k = ${deg} · Component #${rk} (${cs} nodes, ${(100 * cs / n).toFixed(1)}%)`;
   }
 
   const rCap = Math.min(eps * sc, H * 0.28), cxp = W - 16 - rCap, cyp = 16 + rCap;
@@ -647,7 +647,7 @@ function update() {
   ctx.restore();
 
   const g = ranked[0][1] / n, s2 = ranked.length > 1 ? ranked[1][1] / n : 0;
-  $("epsv").textContent = `${eps.toFixed(4)} (${(100 * eps / S.diam).toFixed(2)}% D)`;
+  $("epsv").textContent = `${eps.toFixed(4)} (${(100 * eps / S.diam).toFixed(2)}% of diameter D)`;
   $("k_eps").textContent = (100 * eps / S.diam).toFixed(2) + "%";
   $("k_deg").textContent = (2 * E / n).toFixed(2);
   $("k_gcc").textContent = g.toFixed(3);

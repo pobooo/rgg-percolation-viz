@@ -6,7 +6,7 @@
 
 这是一个面向二维 **$\varepsilon$-ball 随机几何图（Random Geometric Graphs, RGGs）** 的交互式可视化实验，用于直观观察均匀点云与多种非均匀空间分布下的 **渗流相变（Percolation Phase Transition）**、**分簇平台区（Cluster-Separation Plateau）** 以及 **多尺度跨簇合并现象**。
 
-**零外部依赖、纯浏览器本地运行** —— 整个应用仅由单个 `index.html` 文件组成，无需后端、无需 npm 构建或外部 CDN 库。在浏览器中直接打开即可实时采样点云、计算欧氏最小生成树（EMST）精确合并事件序列，并以 60 fps 绘制连通分量演化与 `GCC(ε) / SGCC(ε)` 双轴渗流曲线。
+**零外部依赖、纯浏览器本地运行** —— 整个应用仅由单个 `index.html` 文件组成，无需后端、无需构建工具或任何外部依赖库。在浏览器中直接打开即可实时采样点云、计算欧氏最小生成树（Euclidean Minimum Spanning Tree, EMST）精确合并事件序列，并以 60 帧/秒（frames per second, fps）绘制连通分量演化与最大连通分量（Giant Connected Component, `GCC`）、次大连通分量（Second Giant Connected Component, `SGCC`）双轴渗流曲线。
 
 ---
 
@@ -17,7 +17,7 @@
 - **最大连通分量占比（`GCC / N`）**：最大连通子图包含的节点比例；
 - **次大连通分量占比（`SGCC / N`）**：第二大连通子图包含的节点比例（在两个大分量即将合并前会出现尖锐峰值）。
 
-在聚类分析与复杂网络中（如 $\varepsilon$-邻域图、单链层次聚类、DBSCAN 类密度连通性以及相似性阈值网络），一个核心问题是：
+在聚类分析与复杂网络中（如 $\varepsilon$-邻域图、单链层次聚类、基于密度的噪声应用空间聚类（Density-Based Spatial Clustering of Applications with Noise, DBSCAN）类密度连通性以及相似性阈值网络），一个核心问题是：
 
 > **在什么空间分布下，$G(N, \varepsilon)$ 会出现多次相变或稳定的“分簇平台区”（使各簇内部已充分连通、簇间尚未合并）？在什么情况下，单一全局阈值 $\varepsilon$ 必然失效？**
 
@@ -48,7 +48,7 @@
 因此：
 1. **稠密图最优的 $O(N^2)$ Prim 算法**只需运行一次，即可精确求出全部 $N-1$ 个连通合并临界距离；
 2. **带分量大小直方图的并查集（Union–Find）**按边权升序回放这 $N-1$ 条树边，在 $O(N\alpha(N))$ 时间内即可得到任意 $\varepsilon \in (0, \infty)$ 上**完全精确**的 `GCC(ε)` 与 `SGCC(ε)` 曲线；
-3. **60 fps 实时渲染优化**：预计算 1001 桶对数距离点对直方图以实时给出精确边数 $E(\varepsilon)$ 与平均度 $\langle k \rangle = 2E/N$；当 $E \le 40{,}000$ 时使用二维空间哈希网格（Spatial Hash Grid）精确提取全部连边，超稠密区则保留全部已激活 MST 骨架边并叠加确定性均匀抽样边，保证拖动丝滑。
+3. **60 fps 实时渲染优化**：预计算 1001 桶对数距离点对直方图以实时给出精确边数 $E(\varepsilon)$ 与平均度 $\langle k \rangle = 2E/N$；当 $E \le 40{,}000$ 时使用二维空间哈希网格（Spatial Hash Grid）精确提取全部连边，超稠密区则保留全部已激活的最小生成树（Minimum Spanning Tree, MST）骨架边并叠加确定性均匀抽样边，保证拖动丝滑。
 
 ---
 
@@ -57,7 +57,7 @@
 - **实时扫描 $\varepsilon$**：拖动中间的 $\varepsilon$ 滑块、直接在右侧渗流曲线上点击/拖拽，或点击 **▶ Sweep ε** 自动播放从孤立点到全图连通的完整相变过程；
 - **临界点一键定位**：自动检测并生成 `⚡ Jump`（GCC 陡增跳变点）、`▲ SGCC peak`（次大分量峰值）与 `🎯 Plateau`（分簇平台区几何中心）快捷按钮，支持 `⏮ / ⏭` 逐个跳转；
 - **节点 $\varepsilon$-ball 悬停检视**：鼠标悬停左侧任意节点，实时画出该点的 $\varepsilon$ 邻域圆、邻接连边、局部度 $k_i$ 及所属连通分量排名；
-- **MST 骨架与跨簇桥接边**：勾选 **MST backbone & bridges** 后，深灰实线显示当前已连通的树骨架（$\le \varepsilon$），橙色虚线高亮即将触发跨簇合并的关键桥接边（$> \varepsilon$）及其精确合并阈值（占直径百分比）；
+- **MST 骨架与跨簇桥接边**：勾选 **Minimum Spanning Tree (MST) & bridges** 后，深灰实线显示当前已连通的树骨架（$\le \varepsilon$），橙色虚线高亮即将触发跨簇合并的关键桥接边（$> \varepsilon$）及其精确合并阈值（占直径百分比）；
 - **实验状态分享**：点击 **🔗 Copy link** 可将当前分布、节点数 $N$ 与阈值 $\varepsilon$ 编码至 URL Hash，方便复现与分享。
 
 ---

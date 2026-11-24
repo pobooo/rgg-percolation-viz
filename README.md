@@ -6,18 +6,18 @@
 
 An interactive visualization of **percolation phase transitions**, **cluster-separation plateaus**, and **multi-scale merging** in 2D **$\varepsilon$-ball Random Geometric Graphs (RGGs)** across uniform and inhomogeneous spatial point distributions.
 
-**Zero-dependency, browser-only** — a single standalone `index.html` generates the point clouds, computes the exact Euclidean Minimum Spanning Tree (EMST) merger sequence, evaluates `GCC(ε)` and `SGCC(ε)` across the full log-scale range of $\varepsilon$, and renders both the live component graph and percolation curves on HTML5 Canvas at 60 fps. No backend, no npm, no external CDN libraries.
+**Zero-dependency, browser-only** — a single standalone `index.html` generates the point clouds, computes the exact Euclidean Minimum Spanning Tree (EMST) merger sequence, evaluates the Giant Connected Component (`GCC`) and Second Giant Connected Component (`SGCC`) across the full log-scale range of $\varepsilon$, and renders both the live component graph and percolation curves on HTML5 Canvas at 60 frames per second (fps). No backend, no package manager, and no external libraries.
 
 ---
 
 ## Motivation
 
-Given $N$ points $\{x_1, \dots, x_N\} \subset \mathbb{R}^2$, connect every pair with Euclidean distance $\|x_i - x_j\|_2 \le \varepsilon$ to form the $\varepsilon$-ball graph $G(N, \varepsilon)$. As $\varepsilon$ increases from $0$ to the point-set diameter $D$:
+Given $N$ points $\{x_1, \dots, x_N\} \subset \mathbb{R}^2$, connect every pair with Euclidean distance $\|x_i - x_j\|_2 \le \varepsilon$ to form the $\varepsilon$-ball RGG $G(N, \varepsilon)$. As $\varepsilon$ increases from $0$ to the point-set diameter $D$:
 
 - **Giant Connected Component (`GCC / N`)**: fraction of nodes in the largest connected component.
 - **Second Giant Connected Component (`SGCC / N`)**: fraction of nodes in the second-largest connected component, which peaks sharply right before two major components merge.
 
-In clustering and network science (e.g., $\varepsilon$-neighborhood graphs, single-linkage / DBSCAN-style connectivity, and distance-thresholded similarity networks), a recurring question is:
+In clustering and network science (e.g., $\varepsilon$-neighborhood graphs, single-linkage hierarchical clustering, Density-Based Spatial Clustering of Applications with Noise (DBSCAN)-style connectivity, and distance-thresholded similarity networks), a recurring question is:
 
 > **When does $G(N, \varepsilon)$ exhibit multiple phase transitions or a stable plateau where clusters are internally connected yet mutually separated — and when does a single global threshold $\varepsilon$ fail?**
 
@@ -59,7 +59,7 @@ Consequently:
 - **Real-time $\varepsilon$ scrubbing**: drag the $\varepsilon$ slider, click/drag directly on the `GCC(ε) / SGCC(ε)` chart, or press **▶ Sweep ε** to animate percolation from isolated nodes to full connectivity.
 - **Automatic critical-point chips**: jump directly to detected `GCC` jumps (`⚡ Jump`), the `SGCC` susceptibility-like peak (`▲ SGCC peak`), or the geometric midpoint of a cluster-separation plateau (`🎯 Plateau`), or step through them with `⏮ / ⏭`.
 - **Node $\varepsilon$-ball inspector**: hover over any point in the scatter plot to visualize its exact radius-$\varepsilon$ disk, incident neighbors, local degree $k_i$, and component rank/size.
-- **MST backbone & inter-cluster bridges**: toggle **MST backbone & bridges** to overlay active tree edges ($\le \varepsilon$) in dark gray and highlight the next critical inter-cluster bridge edges ($> \varepsilon$) in dashed orange with their exact threshold `% D`.
+- **Minimum Spanning Tree (MST) backbone & inter-cluster bridges**: toggle **Minimum Spanning Tree (MST) & bridges** to overlay active tree edges ($\le \varepsilon$) in dark gray and highlight the next critical inter-cluster bridge edges ($> \varepsilon$) in dashed orange with their exact threshold `% D`.
 - **Shareable URL state**: **🔗 Copy link** encodes `#dist=...&n=...&eps=...` in the URL hash for reproducible sharing.
 
 ---
@@ -78,7 +78,7 @@ open index.html   # macOS (or open directly in any modern browser)
 
 ```
 rgg-percolation-viz/
-├── index.html       # Standalone interactive app (HTML + CSS + vanilla Canvas/JS)
+├── index.html       # Standalone interactive app (HTML, CSS, and vanilla Canvas JavaScript)
 ├── README.md        # English documentation
 └── README.zh-CN.md  # Chinese documentation
 ```
