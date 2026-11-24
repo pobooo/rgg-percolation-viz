@@ -19,11 +19,18 @@
   }
   .wrap { max-width: 1280px; margin: 0 auto; padding: 18px 22px 28px; }
   header {
-    display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px 16px;
+    display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px;
     margin-bottom: 12px;
   }
   header h1 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
-  header .sub { color: var(--muted); font-size: 13px; }
+  header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; max-width: 920px; }
+  .nav-tabs { display: inline-flex; gap: 6px; align-items: center; }
+  .nav-tab {
+    text-decoration: none; font-size: 12.5px; padding: 5px 11px; border-radius: 8px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); transition: .14s; white-space: nowrap;
+  }
+  .nav-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
   .card {
     background: var(--card); border: 1px solid var(--line); border-radius: 14px;
     padding: 16px 18px; box-shadow: 0 2px 12px rgba(20, 30, 55, 0.04);
@@ -106,8 +113,14 @@
 <body>
 <div class="wrap">
   <header>
-    <h1>Percolation Phase Transitions in <i>ε</i>-Ball Random Geometric Graphs</h1>
-    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i>, normalized by <i>D</i> (the maximum distance between any two points) · Explore phase transitions and plateaus in the Giant Connected Component (GCC) &amp; Second Giant Connected Component (SGCC)</div>
+    <div>
+      <h1>Percolation Phase Transitions in <i>ε</i>-Ball Random Geometric Graphs</h1>
+      <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i>, normalized by <i>D</i> (the maximum distance between any two points) · Explore phase transitions and plateaus in the Giant Connected Component (GCC) &amp; Second Giant Connected Component (SGCC)</div>
+    </div>
+    <div class="nav-tabs">
+      <a class="nav-tab active" href="./index.html">2D Visual Demo</a>
+      <a class="nav-tab" href="./highdim.html">High-Dim Explorer</a>
+    </div>
   </header>
 
   <div class="card">

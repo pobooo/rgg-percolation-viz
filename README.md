@@ -2,7 +2,9 @@
 
 [中文文档 (Chinese README)](./README.zh-CN.md)
 
-🎮 **Live demo**: <https://qiangliu.net/rgg-percolation-viz/>
+🎮 **Live demos**:
+- **2D Visual Demo** (point cloud, $\varepsilon$-balls &amp; MST bridges): <https://qiangliu.net/rgg-percolation-viz/>
+- **High-Dimensional Explorer** ($d = 2\dots 100$, $m = 2\dots 6$ clusters, top-$m$ curves &amp; distance concentration): <https://qiangliu.net/rgg-percolation-viz/highdim.html>
 
 An interactive visualization of **percolation phase transitions**, **cluster-separation plateaus**, and **multi-scale merging** in 2D **$\varepsilon$-ball Random Geometric Graphs (RGGs)** across uniform and inhomogeneous spatial point distributions.
 
@@ -78,7 +80,8 @@ open index.html   # macOS (or open directly in any modern browser)
 
 ```
 rgg-percolation-viz/
-├── index.html       # Standalone interactive app (HTML, CSS, and vanilla Canvas JavaScript)
+├── index.html       # 2D visual interactive app (point cloud + percolation curves)
+├── highdim.html     # High-dimensional & m-cluster explorer (d = 2..100, log/linear x-axis, distance histogram, top-k spectrum)
 ├── README.md        # English documentation
 └── README.zh-CN.md  # Chinese documentation
 ```

@@ -2,7 +2,9 @@
 
 [English README](./README.md)
 
-🎮 **在线交互体验**：<https://qiangliu.net/rgg-percolation-viz/>
+🎮 **在线交互体验**：
+- **二维可视化 Demo**（点云、$\varepsilon$-ball 与 MST 跨簇桥）：<https://qiangliu.net/rgg-percolation-viz/>
+- **高维 & 多簇探索器**（$d = 2\dots 100$、$m = 2\dots 6$ 簇、前 $m$ 大分量曲线、Log/Linear 横轴与距离集中直方图）：<https://qiangliu.net/rgg-percolation-viz/highdim.html>
 
 这是一个面向二维 **$\varepsilon$-ball 随机几何图（Random Geometric Graphs, RGGs）** 的交互式可视化实验，用于直观观察均匀点云与多种非均匀空间分布下的 **渗流相变（Percolation Phase Transition）**、**分簇平台区（Cluster-Separation Plateau）** 以及 **多尺度跨簇合并现象**。
 

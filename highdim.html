@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>High-Dimensional Percolation in ε-Ball Random Geometric Graphs</title>
+<meta name="description" content="Explore ε-ball random geometric graphs in d = 2 to 100 dimensions and m = 2 to 6 clusters: observe distance concentration, top-k component curves, and percolation transitions without 2D node rendering.">
+<style>
+  :root {
+    --bg: #f5f7fb; --card: #ffffff; --ink: #1f2329; --muted: #646a73;
+    --line: #e2e5ec; --accent: #3370ff; --accent-soft: #eaf1ff;
+    --gcc: #b8860b; --sgcc: #1f7a3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 18px 22px 28px; }
+  header {
+    display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px 16px;
+    margin-bottom: 12px;
+  }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: -.01em; }
+  header .sub { color: var(--muted); font-size: 12.8px; margin-top: 2px; max-width: 920px; }
+  .nav-tabs { display: inline-flex; gap: 6px; align-items: center; }
+  .nav-tab {
+    text-decoration: none; font-size: 12.5px; padding: 5px 11px; border-radius: 8px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); transition: .14s; white-space: nowrap;
+  }
+  .nav-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .nav-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 16px 18px; box-shadow: 0 2px 12px rgba(20, 30, 55, 0.04);
+  }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .presets .lbl { font-size: 12.5px; color: var(--muted); margin-right: 2px; }
+  .pill {
+    font: inherit; font-size: 12.5px; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); cursor: pointer; transition: .14s;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+  .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+
+  .hint-bar {
+    background: #f3f7ff; border: 1px solid #d5e3ff; border-radius: 9px; padding: 7px 12px; margin-bottom: 10px;
+    font-size: 12.8px; color: #243b6b; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .status { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 9px 12px;
+    background: #f6f8fb; border: 1px solid #eaedf3; border-radius: 10px; margin-bottom: 10px; font-size: 13px;
+  }
+  .controls label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .controls select, .btn {
+    font: inherit; font-size: 12.8px; padding: 4px 10px; border-radius: 7px;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  .btn:hover { border-color: #b5bcc9; background: #f9fafc; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.primary:hover { background: #245ee5; }
+  .controls input[type=range] { width: 112px; accent-color: var(--accent); cursor: pointer; }
+  .dim-pills { display: inline-flex; gap: 4px; align-items: center; }
+  .dim-btn {
+    font: inherit; font-size: 12px; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); cursor: pointer; font-variant-numeric: tabular-nums;
+  }
+  .dim-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .dim-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; background: #fff; }
+  .seg button {
+    font: inherit; font-size: 11.8px; padding: 2px 8px; border: 0; background: transparent;
+    color: var(--muted); cursor: pointer;
+  }
+  .seg button.active { background: var(--accent); color: #fff; font-weight: 500; }
+
+  .eps-box { background: #fafbfe; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; }
+  .eps-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .eps-row input[type=range] { flex: 1; min-width: 180px; accent-color: var(--accent); cursor: pointer; }
+  .eps-readout { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; min-width: 215px; text-align: right; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 7px; font-size: 12px; color: var(--muted); }
+  .chip {
+    font: inherit; font-size: 12px; border-radius: 6px; padding: 2px 8px; cursor: pointer;
+    border: 1px solid #f0cfa0; background: #fff7e6; color: #9c5700; transition: .12s;
+  }
+  .chip:hover { transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,.06); }
+  .chip.sg { background: #eaf7ee; border-color: #b7e1c4; color: #1a6b33; }
+  .chip.pl { background: #fffbe0; border: 1px dashed #cdb100; color: #756200; font-weight: 500; }
+
+  .demo { display: grid; grid-template-columns: minmax(380px, 1.48fr) minmax(300px, 1fr); gap: 14px; align-items: stretch; }
+  .right-col { display: flex; flex-direction: column; gap: 12px; }
+  .panel { border: 1px solid var(--line); border-radius: 11px; padding: 10px; position: relative; background: #fff; display: flex; flex-direction: column; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin: 0 2px 6px; gap: 8px; flex-wrap: wrap; }
+  .panel-head b { color: var(--ink); font-size: 13px; }
+  .panel canvas { width: 100%; display: block; border-radius: 6px; }
+  #chart { flex: 1; min-height: 330px; cursor: ew-resize; touch-action: none; }
+  #distChart { height: 158px; cursor: ew-resize; touch-action: none; }
+  #compChart { height: 158px; }
+  .legend { font-size: 11.8px; color: var(--muted); margin: 6px 2px 0; line-height: 1.55; }
+  .legend .sw { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin: 0 4px 0 8px; border-radius: 2px; }
+
+  .kpi { display: grid; grid-template-columns: repeat(6, 1fr); gap: 9px; margin-top: 12px; }
+  .kpi div { background: #f6f8fb; border: 1px solid #eceff5; border-radius: 10px; padding: 8px 11px; }
+  .kpi .v { font-size: 18px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .kpi .k { font-size: 11.5px; color: var(--muted); }
+
+  .foot {
+    margin-top: 10px; font-size: 12px; color: var(--muted);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; padding: 0 4px;
+  }
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; background: #1f2329; color: #fff; padding: 8px 14px;
+    border-radius: 8px; font-size: 12.5px; opacity: 0; transform: translateY(8px); transition: .2s; pointer-events: none; z-index: 99;
+  }
+  .toast.show { opacity: .96; transform: translateY(0); }
+  .disabled { opacity: .45; pointer-events: none; }
+
+  @media (max-width: 960px) {
+    .wrap { padding: 12px; }
+    .demo { grid-template-columns: 1fr; }
+    .kpi { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>High-Dimensional Percolation in <i>ε</i>-Ball Random Geometric Graphs</h1>
+      <div class="sub">Connect <i>d</i>-dimensional point pairs at Euclidean distance ≤ <i>ε</i>, normalized by <i>D</i> (maximum distance between any two points) · Compare the Giant Connected Component (GCC, <i>C</i><sub>1</sub>), Second Giant Connected Component (SGCC, <i>C</i><sub>2</sub>), and higher-rank components <i>C</i><sub>3</sub>…<i>C</i><sub><i>m</i>+1</sub> across dimensions <i>d</i> and cluster counts <i>m</i></div>
+    </div>
+    <div class="nav-tabs">
+      <a class="nav-tab" href="./index.html">2D Visual Demo</a>
+      <a class="nav-tab active" href="./highdim.html">High-Dim Explorer</a>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="presets" id="presetBar">
+      <span class="lbl">Distribution:</span>
+      <button class="pill active" data-dist="blobs_sym"><i>m</i> Equal Blobs (equidistant)</button>
+      <button class="pill" data-dist="blobs_hier"><i>m</i> Equal Blobs (unequal gaps)</button>
+      <button class="pill" data-dist="blobs_unequal"><i>m</i> Unequal-Density Blobs</button>
+      <button class="pill" data-dist="blobs_noise"><i>m</i> Blobs + 25% Noise</button>
+      <button class="pill" data-dist="uniform">Uniform Hypercube [0,1]<sup><i>d</i></sup></button>
+      <button class="pill" data-dist="gaussian">Isotropic Gaussian</button>
+      <button class="pill" data-dist="sphere">Unit Hypersphere <i>S</i><sup><i>d</i>−1</sup></button>
+    </div>
+
+    <div class="hint-bar">
+      <span id="distHint"></span>
+      <span class="status" id="status"></span>
+    </div>
+
+    <div class="controls">
+      <label>Dimension <i>d</i>
+        <span class="dim-pills" id="dimBar">
+          <button class="dim-btn" data-d="2">2</button>
+          <button class="dim-btn" data-d="3">3</button>
+          <button class="dim-btn active" data-d="5">5</button>
+          <button class="dim-btn" data-d="10">10</button>
+          <button class="dim-btn" data-d="20">20</button>
+          <button class="dim-btn" data-d="50">50</button>
+          <button class="dim-btn" data-d="100">100</button>
+        </span>
+      </label>
+      <label id="mWrap">Clusters <i>m</i> <input id="mSlider" type="range" min="2" max="6" step="1" value="4"><b id="mv">4</b></label>
+      <label>Nodes <i>N</i> <input id="n" type="range" min="200" max="1600" step="100" value="600"><b id="nv">600</b></label>
+      <label>Curve average <select id="runs"><option value="1">1 run (single)</option><option value="3" selected>3 runs (mean)</option><option value="6">6 runs (mean)</option></select></label>
+      <label><input id="showTopM" type="checkbox" checked> Show <i>C</i><sub>3</sub>…<i>C</i><sub><i>m</i>+1</sub> curves</label>
+      <button id="regen" class="btn primary">Resample</button>
+      <button id="shareBtn" class="btn">🔗 Copy link</button>
+    </div>
+
+    <div class="eps-box">
+      <div class="eps-row">
+        <button id="prevCrit" class="btn" title="Previous critical point">⏮</button>
+        <button id="play" class="btn">▶ Sweep ε</button>
+        <button id="nextCrit" class="btn" title="Next critical point">⏭</button>
+        <span><b><i>ε</i></b></span>
+        <input id="eps" type="range" min="0" max="1000" value="450">
+        <span class="eps-readout" id="epsv"></span>
+      </div>
+      <div class="chips" id="chips"></div>
+    </div>
+
+    <div class="demo">
+      <div class="panel">
+        <div class="panel-head">
+          <b>Percolation Curves vs. <i>ε</i></b>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span>Click or drag to scrub <i>ε</i></span>
+            <div class="seg" id="scaleSeg">
+              <button data-scale="log" class="active">Log x</button>
+              <button data-scale="linear">Linear x</button>
+            </div>
+          </div>
+        </div>
+        <canvas id="chart"></canvas>
+        <div class="legend">
+          <span class="sw" style="background:var(--gcc); margin-left:0"></span><i>C</i><sub>1</sub>/<i>N</i> (GCC, left axis)
+          <span class="sw" style="background:var(--sgcc)"></span><i>C</i><sub>2</sub>/<i>N</i> (SGCC, right axis)
+          <span id="topMLegend">
+            <span class="sw" style="background:#5b6ee1"></span><i>C</i><sub>3</sub>…<i>C<sub>m</sub></i>/<i>N</i> (left axis)
+            <span class="sw" style="background:none; height:0; border-top:1.5px dashed #8c564b"></span><i>C</i><sub><i>m</i>+1</sub>/<i>N</i> (residual)
+          </span>
+          <span class="sw" style="background:none; height:0; border-top:1.5px dashed #333"></span>Detected GCC jump
+          <span class="sw" style="background:#f5e68a; height:9px"></span>Plateau
+          <span class="sw" style="background:#3370ff"></span>Current <i>ε</i>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div class="panel">
+          <div class="panel-head">
+            <b>Pairwise Distance Distribution</b>
+            <span id="distStats">Distance concentration vs. <i>d</i></span>
+          </div>
+          <canvas id="distChart"></canvas>
+          <div class="legend" id="distLegend">
+            <span class="sw" style="background:rgba(51,112,255,0.65); height:8px; margin-left:0"></span>Intra-cluster pairs
+            <span class="sw" style="background:rgba(245,158,11,0.65); height:8px"></span>Inter-cluster pairs
+            <span class="sw" style="background:#3370ff"></span>Current <i>ε</i>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <b>Component Size Spectrum at Current <i>ε</i></b>
+            <span id="compInfo">Top 10 components (<i>C</i><sub>1</sub>…<i>C</i><sub>10</sub>)</span>
+          </div>
+          <canvas id="compChart"></canvas>
+          <div class="legend" id="compLegend">
+            Bars show <i>C<sub>r</sub></i> / <i>N</i> for rank <i>r</i> = 1…10 · dashed divider marks the <i>m</i>-cluster boundary
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div><div class="v" id="k_eps">–</div><div class="k"><i>ε</i> (% of max distance <i>D</i>)</div></div>
+      <div><div class="v" id="k_deg">–</div><div class="k">Mean degree ⟨<i>k</i>⟩ = 2<i>E</i>/<i>N</i></div></div>
+      <div><div class="v" id="k_gcc">–</div><div class="k">Largest component <i>C</i><sub>1</sub> / <i>N</i></div></div>
+      <div><div class="v" id="k_sgcc">–</div><div class="k">Second largest <i>C</i><sub>2</sub> / <i>N</i></div></div>
+      <div><div class="v" id="k_cov">–</div><div class="k" id="k_cov_lbl">Top-<i>m</i> sum ∑<sub>1..<i>m</i></sub> <i>C<sub>i</sub></i> / <i>N</i></div></div>
+      <div><div class="v" id="k_cv">–</div><div class="k">Distance Coefficient of Variation (CV)</div></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span>Exact Euclidean Minimum Spanning Tree (EMST) merger sequence &amp; exact pairwise distance matrix in ℝ<sup><i>d</i></sup> · Computed locally in your browser</span>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const DIST_META = {
+  blobs_sym: "Equidistant m equal-density blobs (constant Euclidean radius across d): all m blobs percolate internally together and bridge nearly simultaneously → typically 2 jumps (1 plateau), not m jumps.",
+  blobs_hier: "Unequal-gap m equal-density blobs: distinct inter-cluster gaps create multiple coalescence steps. Notice that when two non-GCC clusters merge (e.g. m ≥ 4), SGCC jumps while GCC stays flat!",
+  blobs_unequal: "Unequal-density m blobs: dense blobs connect early while sparser ones stay fragmented. Even if C₁ and C₂ plateau, Cₘ stays small until bridging begins—no single global ε cleanly separates all m clusters.",
+  blobs_noise: "m blobs + 25% background noise (sampled within the cluster span): stepping-stone bridges erode the plateau; compare how noise behaves as d increases.",
+  uniform: "Uniform hypercube [0,1]ᵈ: raising d sharply concentrates pairwise distances (CV drops as 1/√d), narrows the ε transition window, and lowers the empirical critical mean degree ⟨k⟩ toward 1.",
+  gaussian: "Isotropic Gaussian N(0, I_d): in d=2 the dense core percolates first and absorbs outer points smoothly; in high d probability mass concentrates on a thin spherical shell, restoring a sharp single transition!",
+  sphere: "Uniform unit hypersphere Sᵈ⁻¹ (normalized embeddings): mimics unit-norm text/image vectors; as d grows, pairwise distances concentrate near √2 (orthogonal vectors) and transitions sharpen dramatically.",
+};
+const IS_CLUSTERED = { blobs_sym: true, blobs_hier: true, blobs_unequal: true, blobs_noise: true, uniform: false, gaussian: false, sphere: false };
+const RANK_COLORS = ["#b8860b", "#1f7a3a", "#5b6ee1", "#9b59b6", "#e67e22", "#16a085", "#e84393", "#7f8c8d"];
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function normalGen(rnd) {
+  let spare = null;
+  return () => {
+    if (spare !== null) { const s = spare; spare = null; return s; }
+    const u = Math.max(rnd(), 1e-12), v = rnd();
+    const m = Math.sqrt(-2 * Math.log(u));
+    spare = m * Math.sin(2 * Math.PI * v);
+    return m * Math.cos(2 * Math.PI * v);
+  };
+}
+
+// Regular (m-1)-simplex vertices with pairwise edge length 1 when d >= m-1;
+// falls back to regular m-gon in d=2 and spherical symmetric layout in d=3 when m > d+1.
+function simplexCenters(m, d) {
+  const C = Array.from({ length: m }, () => new Float64Array(d));
+  if (d === 2 && m > 3) {
+    const R = 0.5 / Math.sin(Math.PI / m);
+    for (let k = 0; k < m; k++) {
+      const a = 2 * Math.PI * k / m;
+      C[k][0] = R * Math.cos(a); C[k][1] = R * Math.sin(a);
+    }
+    return C;
+  }
+  if (d === 3 && m > 4) {
+    const pts = m === 5
+      ? [[1,0,0], [-0.5,0.8660254,0], [-0.5,-0.8660254,0], [0,0,1.2247449], [0,0,-1.2247449]]
+      : [[1,0,0], [-1,0,0], [0,1,0], [0,-1,0], [0,0,1], [0,0,-1]];
+    const sc = m === 5 ? 1 / Math.sqrt(3) : Math.SQRT1_2;
+    for (let k = 0; k < m; k++) for (let c = 0; c < 3; c++) C[k][c] = pts[k][c] * sc;
+    return C;
+  }
+  const kDim = Math.min(d, m - 1);
+  // Exact Helmert construction: m vertices in R^(m-1) with all pairwise Euclidean distances strictly equal to 1
+  for (let col = 0; col < kDim; col++) {
+    const k = col + 1;
+    const val = 1 / Math.sqrt(2 * k * (k + 1));
+    for (let row = 0; row < k; row++) C[row][col] = val;
+    C[k][col] = -k * val;
+  }
+  return C;
+}
+
+// Hierarchical / unequal-gap centers along 1D axis so merges happen at distinct thresholds (including non-GCC merges for m>=4)
+function hierCenters(m, d) {
+  const presets = {
+    2: [0, 1.0],
+    3: [0, 0.72, 2.05],
+    4: [0, 0.58, 1.85, 2.60],
+    5: [0, 0.52, 1.65, 2.35, 4.15],
+    6: [0, 0.48, 1.50, 2.15, 3.75, 4.60],
+  };
+  const xs = presets[m] || Array.from({ length: m }, (_, i) => i * 0.9);
+  const mean = xs.reduce((a, b) => a + b, 0) / m;
+  return xs.map(x => { const v = new Float64Array(d); v[0] = x - mean; return v; });
+}
+
+function samplePoints(dist, n, d, m, seed) {
+  const rnd = mulberry32(seed), nrm = normalGen(rnd);
+  const X = new Float64Array(n * d);
+  const labels = new Int16Array(n).fill(-1);
+  const invSqrtD = 1 / Math.sqrt(d);
+
+  if (dist === "uniform") {
+    for (let i = 0; i < n * d; i++) X[i] = rnd();
+  } else if (dist === "gaussian") {
+    for (let i = 0; i < n * d; i++) X[i] = nrm() * invSqrtD;
+  } else if (dist === "sphere") {
+    for (let i = 0; i < n; i++) {
+      let s2 = 0, off = i * d;
+      for (let c = 0; c < d; c++) { const v = nrm(); X[off + c] = v; s2 += v * v; }
+      const inv = 1 / Math.sqrt(Math.max(s2, 1e-12));
+      for (let c = 0; c < d; c++) X[off + c] *= inv;
+    }
+  } else if (dist === "blobs_sym" || dist === "blobs_hier") {
+    const centers = dist === "blobs_sym" ? simplexCenters(m, d) : hierCenters(m, d);
+    // Keep Euclidean RMS radius R_blob constant across d so blobs stay separated at high d
+    const R = dist === "blobs_sym" ? 0.16 : 0.11;
+    const sig = R * invSqrtD;
+    for (let i = 0; i < n; i++) {
+      const k = i % m, ctr = centers[k], off = i * d;
+      labels[i] = k;
+      for (let c = 0; c < d; c++) X[off + c] = ctr[c] + sig * nrm();
+    }
+  } else if (dist === "blobs_unequal") {
+    const centers = simplexCenters(m, d);
+    // Radii span a 4.5x ratio across clusters while keeping Euclidean scale invariant across d
+    const radii = Array.from({ length: m }, (_, k) => 0.055 * Math.pow(4.6, k / Math.max(1, m - 1)));
+    const weights = Array.from({ length: m }, (_, k) => 1 / Math.pow(1.22, k));
+    const totW = weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < n; i++) {
+      let u = rnd() * totW, k = 0;
+      while (k < m - 1 && u > weights[k]) { u -= weights[k]; k++; }
+      const ctr = centers[k], sig = radii[k] * invSqrtD, off = i * d;
+      labels[i] = k;
+      for (let c = 0; c < d; c++) X[off + c] = ctr[c] + sig * nrm();
+    }
+  } else if (dist === "blobs_noise") {
+    const centers = simplexCenters(m, d);
+    const nClust = Math.floor(0.75 * n);
+    const sig = 0.14 * invSqrtD;
+    for (let i = 0; i < nClust; i++) {
+      const k = i % m, ctr = centers[k], off = i * d;
+      labels[i] = k;
+      for (let c = 0; c < d; c++) X[off + c] = ctr[c] + sig * nrm();
+    }
+    // Sample stepping-stone noise inside the convex/spherical hull of the cluster centers
+    const kDim = Math.min(d, Math.max(2, m - 1));
+    const noiseSig = 0.42 * invSqrtD;
+    for (let i = nClust; i < n; i++) {
+      const off = i * d;
+      labels[i] = -1;
+      // Convex combination of two random centers + isotropic jitter so noise genuinely bridges clusters in any d
+      const a = Math.floor(rnd() * m), b = Math.floor(rnd() * m), t = rnd();
+      for (let c = 0; c < d; c++) {
+        const base = (1 - t) * centers[a][c] + t * centers[b][c];
+        X[off + c] = base + (c < kDim ? 0.20 : 0.14) * invSqrtD * nrm() + 0.12 * noiseSig * nrm();
+      }
+    }
+  }
+  return { X, n, d, labels };
+}
+
+// Compute exact pairwise Euclidean distance matrix (upper triangle stored in symmetric Float32Array),
+// exact diameter D = max_{i<j} dist(i,j), distance distribution stats, and Prim EMST in one clean pass.
+function analyzeRealization(P, topK) {
+  const { X, n, d, labels } = P;
+  const distMat = new Float32Array(n * n);
+  let maxD = 0, sumD = 0, sumD2 = 0, pairCnt = 0;
+
+  for (let i = 0; i < n; i++) {
+    const oi = i * d, rowI = i * n;
+    for (let j = i + 1; j < n; j++) {
+      const oj = j * d;
+      let s2 = 0;
+      for (let c = 0; c < d; c++) { const diff = X[oi + c] - X[oj + c]; s2 += diff * diff; }
+      const dist = Math.sqrt(s2);
+      distMat[rowI + j] = dist;
+      distMat[j * n + i] = dist;
+      if (dist > maxD) maxD = dist;
+      sumD += dist; sumD2 += s2; pairCnt++;
+    }
+  }
+  const meanD = sumD / pairCnt;
+  const stdD = Math.sqrt(Math.max(0, sumD2 / pairCnt - meanD * meanD));
+  const cv = stdD / Math.max(meanD, 1e-12);
+
+  // Exact O(n^2) Prim EMST directly on distMat
+  const inT = new Uint8Array(n), best = new Float32Array(n).fill(Infinity), from = new Int32Array(n).fill(-1);
+  const eu = new Int32Array(n - 1), ev = new Int32Array(n - 1), ew = new Float32Array(n - 1);
+  best[0] = 0;
+  let cur = 0, em = 0;
+  for (let it = 0; it < n; it++) {
+    inT[cur] = 1;
+    if (from[cur] >= 0) { eu[em] = from[cur]; ev[em] = cur; ew[em] = best[cur]; em++; }
+    const row = cur * n;
+    let nxt = -1, nb = Infinity;
+    for (let j = 0; j < n; j++) {
+      if (inT[j]) continue;
+      const w = distMat[row + j];
+      if (w < best[j]) { best[j] = w; from[j] = cur; }
+      if (best[j] < nb) { nb = best[j]; nxt = j; }
+    }
+    if (nxt < 0) break;
+    cur = nxt;
+  }
+  const order = Array.from({ length: em }, (_, i) => i).sort((a, b) => ew[a] - ew[b]);
+  const T = {
+    u: Int32Array.from(order, i => eu[i]),
+    v: Int32Array.from(order, i => ev[i]),
+    w: Float64Array.from(order, i => ew[i]),
+  };
+
+  // Replay EMST edges with Union-Find + active-size tracker to record exact top-K component sizes at every merge
+  const p = new Int32Array(n), sz = new Int32Array(n).fill(1);
+  for (let i = 0; i < n; i++) p[i] = i;
+  const find = x => { while (p[x] !== x) { p[x] = p[p[x]]; x = p[x]; } return x; };
+  const sizeCounts = new Map([[1, n]]);
+  const topCurves = Array.from({ length: topK }, () => new Int32Array(em));
+  const nComp = new Int32Array(em);
+  let curComps = n;
+
+  for (let i = 0; i < em; i++) {
+    const a = find(T.u[i]), b = find(T.v[i]);
+    const sa = sz[a], sb = sz[b], s = sa + sb;
+    const dec = v => { const c = sizeCounts.get(v) - 1; if (c <= 0) sizeCounts.delete(v); else sizeCounts.set(v, c); };
+    dec(sa); dec(sb);
+    sizeCounts.set(s, (sizeCounts.get(s) || 0) + 1);
+    if (sa >= sb) { p[b] = a; sz[a] = s; } else { p[a] = b; sz[b] = s; }
+    curComps--;
+    nComp[i] = curComps;
+
+    // Extract top-K sizes from distinct sizes in sizeCounts (number of distinct sizes <= sqrt(2n) ~ 35, very fast)
+    const keys = Array.from(sizeCounts.keys()).sort((x, y) => y - x);
+    let filled = 0;
+    for (let ki = 0; ki < keys.length && filled < topK; ki++) {
+      const val = keys[ki], cnt = sizeCounts.get(val);
+      for (let rep = 0; rep < cnt && filled < topK; rep++) topCurves[filled++][i] = val;
+    }
+    while (filled < topK) topCurves[filled++][i] = 0;
+  }
+
+  return { distMat, diam: maxD, cv, meanD, stdD, T, topCurves, nComp, labels, n };
+}
+
+function buildDistHistAndCum(R, pctMin, pctMax) {
+  const { distMat, diam, labels, n } = R;
+  const H = 120; // linear histogram bins over [0, 100% D]
+  const hIntra = new Uint32Array(H), hInter = new Uint32Array(H), hAll = new Uint32Array(H);
+  const B = 1001; // cumulative bins for slider (both log and linear exact queries)
+  const logBins = new Uint32Array(B), linBins = new Uint32Array(B);
+  const l0 = Math.log(pctMin), lInv = 1000 / Math.log(pctMax / pctMin);
+  const linInv = 1000 / pctMax;
+  const invD = 100 / diam;
+
+  for (let i = 0; i < n; i++) {
+    const row = i * n, li = labels[i];
+    for (let j = i + 1; j < n; j++) {
+      const pct = distMat[row + j] * invD;
+      const hb = Math.min(H - 1, Math.max(0, Math.floor(pct * H / 100)));
+      hAll[hb]++;
+      if (li >= 0 && labels[j] >= 0) {
+        if (li === labels[j]) hIntra[hb]++; else hInter[hb]++;
+      }
+      const lb = pct <= pctMin ? 0 : Math.ceil((Math.log(pct) - l0) * lInv);
+      if (lb < B) logBins[Math.max(0, lb)]++;
+      const xb = Math.ceil(pct * linInv);
+      if (xb < B) linBins[Math.max(0, xb)]++;
+    }
+  }
+  for (let k = 1; k < B; k++) { logBins[k] += logBins[k - 1]; linBins[k] += linBins[k - 1]; }
+  return { hAll, hIntra, hInter, logBins, linBins };
+}
+
+function curveAtPct(R, pct) {
+  const r = (pct / 100) * R.diam, w = R.T.w;
+  let lo = 0, hi = w.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (w[mid] <= r) lo = mid + 1; else hi = mid; }
+  const out = new Float64Array(R.topCurves.length);
+  if (lo === 0) { out.fill(1 / R.n); return [out, R.n]; }
+  for (let k = 0; k < out.length; k++) out[k] = R.topCurves[k][lo - 1] / R.n;
+  return [out, R.nComp[lo - 1]];
+}
+
+function analyseCurves(pctGrid, Gm, Sm) {
+  const L = pctGrid.length, lr = pctGrid.map(Math.log), w = 8, dG = new Float64Array(L);
+  for (let i = 0; i < L; i++) {
+    const a = Math.max(0, i - w), b = Math.min(L - 1, i + w);
+    dG[i] = (Gm[b] - Gm[a]) / (lr[b] - lr[a]);
+  }
+  const jumps = [], win = 34;
+  for (let i = 1; i < L - 1; i++) {
+    if (dG[i] < 0.26) continue;
+    let isMax = true;
+    for (let j = Math.max(0, i - win); j <= Math.min(L - 1, i + win); j++) {
+      if (dG[j] > dG[i] || (dG[j] === dG[i] && j < i)) { isMax = false; break; }
+    }
+    if (isMax) jumps.push(pctGrid[i]);
+  }
+  let best = 0, cur = 0, plat = null;
+  for (let i = 0; i < L; i++) {
+    const f = Math.abs(dG[i]) < 0.05 && Gm[i] > 0.09 && Gm[i] < 0.91;
+    cur = f ? cur + 1 : 0;
+    if (cur > best) { best = cur; plat = [i - cur + 1, i]; }
+  }
+  const plateau = plat && lr[plat[1]] - lr[plat[0]] > Math.log(1.32)
+    ? [pctGrid[plat[0]], pctGrid[plat[1]], Gm[Math.floor((plat[0] + plat[1]) / 2)]]
+    : null;
+  let sgIdx = 0;
+  for (let i = 1; i < L; i++) if (Sm[i] > Sm[sgIdx]) sgIdx = i;
+  return { jumps, plateau, sgccPeak: [pctGrid[sgIdx], Sm[sgIdx]] };
+}
+
+function simulate(dist, d, m, n, runs, seed0) {
+  const topK = 10;
+  const Rs = [];
+  for (let r = 0; r < runs; r++) {
+    const P = samplePoints(dist, n, d, m, seed0 + 7919 * r);
+    Rs.push(analyzeRealization(P, topK));
+  }
+  // Choose smart lower bound of pctGrid from shortest MST edge so log-scale stays well-framed across all d
+  const minMstPct = Math.min(...Rs.map(R => 100 * R.T.w[Math.min(5, R.T.w.length - 1)] / R.diam));
+  const pctMin = Math.max(0.05, Math.min(2.0, minMstPct * 0.45));
+  const pctMax = 100.0;
+
+  const L = 520, pctGrid = new Array(L);
+  const logMin = Math.log(pctMin), logMax = Math.log(pctMax);
+  for (let i = 0; i < L; i++) pctGrid[i] = Math.exp(logMin + (logMax - logMin) * i / (L - 1));
+
+  const Cm = Array.from({ length: topK }, () => new Float64Array(L));
+  const C0 = Array.from({ length: topK }, () => new Float64Array(L));
+  for (let r = 0; r < runs; r++) {
+    const R = Rs[r];
+    for (let i = 0; i < L; i++) {
+      const [vals] = curveAtPct(R, pctGrid[i]);
+      for (let k = 0; k < topK; k++) {
+        Cm[k][i] += vals[k] / runs;
+        if (r === 0) C0[k][i] = vals[k];
+      }
+    }
+  }
+  const hist = buildDistHistAndCum(Rs[0], pctMin, pctMax);
+  const meanCV = Rs.reduce((a, R) => a + R.cv, 0) / runs;
+  return {
+    dist, d, m, n, runs, R0: Rs[0], pctMin, pctMax, pctGrid, Cm, C0, hist, meanCV,
+    ...analyseCurves(pctGrid, Cm[0], Cm[1]),
+  };
+}
+
+const $ = id => document.getElementById(id);
+let S = null, curDist = "blobs_sym", curD = 5, xScale = "log", rafPending = false, playRaf = 0, hoverPct = null;
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._tm); t._tm = setTimeout(() => t.classList.remove("show"), 2000);
+}
+function pctFromSlider() {
+  const t = +$("eps").value / 1000;
+  if (xScale === "log") return S.pctMin * Math.pow(S.pctMax / S.pctMin, t);
+  return Math.max(S.pctMin, t * S.pctMax);
+}
+function sliderFromPct(pct) {
+  const p = Math.min(S.pctMax, Math.max(S.pctMin, pct));
+  const t = xScale === "log"
+    ? Math.log(p / S.pctMin) / Math.log(S.pctMax / S.pctMin)
+    : p / S.pctMax;
+  $("eps").value = Math.round(1000 * Math.min(1, Math.max(0, t)));
+}
+function fitCanvas(c) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5), r = c.getBoundingClientRect();
+  const w = Math.max(10, Math.round(r.width * dpr)), h = Math.max(10, Math.round(r.height * dpr));
+  if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+  const ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [ctx, r.width, r.height];
+}
+function scheduleUpdate() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; update(); });
+}
+function criticalPoints() {
+  if (!S) return [];
+  const pts = [...S.jumps, S.sgccPeak[0]];
+  if (S.plateau) pts.push(S.plateau[0], Math.sqrt(S.plateau[0] * S.plateau[1]), S.plateau[1]);
+  pts.sort((a, b) => a - b);
+  return pts.filter((v, i) => i === 0 || Math.abs(Math.log(v / pts[i - 1])) > 0.05);
+}
+
+function run(targetPct = null) {
+  stopPlay();
+  const m = +$("mSlider").value, n = +$("n").value, runs = +$("runs").value;
+  const cl = IS_CLUSTERED[curDist];
+  $("mWrap").classList.toggle("disabled", !cl);
+  document.querySelectorAll("#presetBar .pill").forEach(b => b.classList.toggle("active", b.dataset.dist === curDist));
+  document.querySelectorAll("#dimBar .dim-btn").forEach(b => b.classList.toggle("active", +b.dataset.d === curD));
+  $("distHint").textContent = "💡 " + (DIST_META[curDist] || DIST_META.uniform);
+  $("status").textContent = "Computing…";
+  $("distLegend").innerHTML = cl
+    ? `<span class="sw" style="background:rgba(51,112,255,0.65); height:8px; margin-left:0"></span>Intra-cluster pairs <span class="sw" style="background:rgba(245,158,11,0.65); height:8px"></span>Inter-cluster pairs <span class="sw" style="background:#3370ff"></span>Current <i>ε</i>`
+    : `<span class="sw" style="background:rgba(100,116,139,0.58); height:8px; margin-left:0"></span>All pairwise distances <span class="sw" style="background:#3370ff"></span>Current <i>ε</i>`;
+  $("k_cov_lbl").innerHTML = cl ? `Top-${m} sum ∑<sub>1..${m}</sub> <i>C<sub>i</sub></i> / <i>N</i>` : "Connected components";
+
+  requestAnimationFrame(() => {
+    const t0 = performance.now();
+    const seed = (+$("regen").dataset.seed || 1);
+    S = simulate(curDist, curD, m, n, runs, seed);
+    $("status").textContent = `d=${curD} · ${runs} realization${runs > 1 ? "s" : ""} · ${(performance.now() - t0).toFixed(0)} ms`;
+    const fmt = v => v < 1 ? v.toFixed(2) : v.toFixed(2);
+    const jBtns = S.jumps.map((v, i) => `<button class="chip" data-pct="${v}">⚡ Jump${S.jumps.length > 1 ? " #" + (i + 1) : ""} @ ${fmt(v)}% D</button>`).join("");
+    const sgBtn = `<button class="chip sg" data-pct="${S.sgccPeak[0]}">▲ SGCC peak ${S.sgccPeak[1].toFixed(2)} @ ${fmt(S.sgccPeak[0])}% D</button>`;
+    const plBtn = S.plateau
+      ? `<button class="chip pl" data-pct="${Math.sqrt(S.plateau[0] * S.plateau[1])}">🎯 Plateau ${fmt(S.plateau[0])}%–${fmt(S.plateau[1])}% D (GCC≈${S.plateau[2].toFixed(2)}, ${(S.plateau[1] / S.plateau[0]).toFixed(1)}× wide)</button>`
+      : `<span>No GCC plateau detected</span>`;
+    $("chips").innerHTML = `<span>Jump to (<i>D</i> = max distance between any two points):</span>${jBtns}${sgBtn}${plBtn}`;
+    $("chips").querySelectorAll("button[data-pct]").forEach(b => b.addEventListener("click", () => {
+      stopPlay(); sliderFromPct(+b.dataset.pct); scheduleUpdate();
+    }));
+
+    if (targetPct !== null) sliderFromPct(targetPct);
+    else if (S.plateau) sliderFromPct(Math.sqrt(S.plateau[0] * S.plateau[1]));
+    else sliderFromPct(S.sgccPeak[0]);
+    update();
+  });
+}
+
+function edgeCountAtPct(pct) {
+  const sl = xScale === "log"
+    ? Math.round(1000 * Math.min(1, Math.max(0, Math.log(pct / S.pctMin) / Math.log(S.pctMax / S.pctMin))))
+    : Math.round(1000 * Math.min(1, Math.max(0, pct / S.pctMax)));
+  return xScale === "log" ? S.hist.logBins[sl] : S.hist.linBins[sl];
+}
+
+function update() {
+  if (!S) return;
+  const pct = pctFromSlider();
+  const epsAbs = (pct / 100) * S.R0.diam;
+  const [compFracs, nComp] = curveAtPct(S.R0, pct);
+  const E = edgeCountAtPct(pct);
+  const deg = (2 * E) / S.n;
+  const cl = IS_CLUSTERED[S.dist];
+
+  $("epsv").textContent = `${epsAbs.toFixed(4)} (${pct.toFixed(2)}% of D)`;
+  $("k_eps").textContent = pct.toFixed(2) + "%";
+  $("k_deg").textContent = deg.toFixed(2);
+  $("k_gcc").textContent = compFracs[0].toFixed(3);
+  $("k_sgcc").textContent = compFracs[1].toFixed(3);
+  if (cl) {
+    let topSum = 0; for (let k = 0; k < S.m; k++) topSum += compFracs[k];
+    $("k_cov").textContent = (100 * topSum).toFixed(1) + "%";
+  } else {
+    $("k_cov").textContent = nComp.toLocaleString();
+  }
+  $("k_cv").textContent = S.meanCV.toFixed(3);
+  $("distStats").textContent = `CV = std / mean = ${S.meanCV.toFixed(3)} (d = ${S.d})`;
+  $("topMLegend").style.display = $("showTopM").checked ? "inline" : "none";
+
+  drawPercolationChart(pct, compFracs);
+  drawDistChart(pct);
+  drawCompChart(compFracs, nComp);
+}
+
+function drawPercolationChart(curPct, curFracs) {
+  const c = $("chart"), [ctx, W, H] = fitCanvas(c);
+  const m = { l: 46, r: 46, t: 14, b: 36 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const l0 = Math.log(S.pctMin), l1 = Math.log(S.pctMax);
+  const X = p => xScale === "log"
+    ? m.l + pw * (Math.log(Math.max(S.pctMin, p)) - l0) / (l1 - l0)
+    : m.l + pw * (p / S.pctMax);
+  const smax = Math.max(0.04, ...S.Cm[1], ...S.C0[1]) * 1.1;
+  const Yg = v => m.t + ph * (1 - v), Ys = v => m.t + ph * (1 - Math.min(1, v / smax));
+  c._map = { m, pw, l0, l1 };
+  ctx.clearRect(0, 0, W, H);
+
+  if (S.plateau) {
+    const xL = X(S.plateau[0]), xR = X(S.plateau[1]);
+    ctx.fillStyle = "rgba(246, 232, 140, 0.55)"; ctx.fillRect(xL, m.t, xR - xL, ph);
+    if (xR - xL > 46) {
+      ctx.save(); ctx.fillStyle = "#7a6400"; ctx.font = "600 11px -apple-system, sans-serif";
+      ctx.textAlign = "center"; ctx.fillText("Plateau", (xL + xR) / 2, m.t + 14); ctx.restore();
+    }
+  }
+
+  ctx.strokeStyle = "#eceff4"; ctx.lineWidth = 1; ctx.fillStyle = "#646a73"; ctx.font = "11px -apple-system, sans-serif";
+  if (xScale === "log") {
+    for (let e = -2; e <= 2; e++) for (const k of [1, 2, 5]) {
+      const p = k * Math.pow(10, e);
+      if (p < S.pctMin || p > S.pctMax) continue;
+      ctx.beginPath(); ctx.moveTo(X(p), m.t); ctx.lineTo(X(p), m.t + ph); ctx.stroke();
+      if (k === 1 || k === 2 || k === 5) {
+        const lbl = p >= 1 ? p.toFixed(0) : String(+p.toPrecision(1));
+        ctx.save(); ctx.textAlign = "center"; ctx.fillText(lbl, X(p), H - m.b + 14); ctx.restore();
+      }
+    }
+  } else {
+    for (let p = 0; p <= 100; p += 10) {
+      ctx.beginPath(); ctx.moveTo(X(p), m.t); ctx.lineTo(X(p), m.t + ph); ctx.stroke();
+      if (p % 20 === 0) {
+        ctx.save(); ctx.textAlign = "center"; ctx.fillText(String(p), X(p), H - m.b + 14); ctx.restore();
+      }
+    }
+  }
+  ctx.save(); ctx.textAlign = "center";
+  ctx.fillText(`ε (% of D, max distance between any two points; ${xScale} scale)`, m.l + pw / 2, H - 5);
+  ctx.restore();
+
+  for (let v = 0; v <= 1.001; v += 0.25) {
+    ctx.beginPath(); ctx.moveTo(m.l, Yg(v)); ctx.lineTo(m.l + pw, Yg(v)); ctx.stroke();
+    ctx.fillStyle = "#9e7107"; ctx.fillText(v.toFixed(2), 6, Yg(v) + 4);
+    ctx.fillStyle = "#1f7a3a"; ctx.fillText((v * smax).toFixed(2), m.l + pw + 6, Yg(v) + 4);
+  }
+
+  const vline = (p, col, dash, lw = 1.3) => {
+    if (!p || p < S.pctMin || p > S.pctMax) return;
+    ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(X(p), m.t); ctx.lineTo(X(p), m.t + ph); ctx.stroke(); ctx.restore();
+  };
+  for (const j of S.jumps) vline(j, "#444", [5, 4], 1.1);
+
+  const drawCurve = (arr, Y, col, lw, dash = null) => {
+    ctx.save(); ctx.strokeStyle = col; ctx.lineWidth = lw;
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath();
+    S.pctGrid.forEach((p, i) => i ? ctx.lineTo(X(p), Y(arr[i])) : ctx.moveTo(X(p), Y(arr[i])));
+    ctx.stroke(); ctx.restore();
+  };
+
+  if ($("showTopM").checked) {
+    const kMax = IS_CLUSTERED[S.dist] ? S.m : 4;
+    for (let k = 2; k < kMax; k++) {
+      drawCurve(S.Cm[k], Yg, RANK_COLORS[k % RANK_COLORS.length], 1.35);
+    }
+    if (IS_CLUSTERED[S.dist] && S.m < S.Cm.length) {
+      drawCurve(S.Cm[S.m], Yg, "#8c564b", 1.2, [4, 3]);
+    }
+  }
+  if (S.runs > 1) {
+    drawCurve(S.C0[1], Ys, "rgba(31,122,58,0.26)", 1.0);
+    drawCurve(S.C0[0], Yg, "rgba(184,134,11,0.28)", 1.15);
+  }
+  drawCurve(S.Cm[1], Ys, "#1f7a3a", 1.85);
+  drawCurve(S.Cm[0], Yg, "#b8860b", 2.5);
+
+  const xe = X(curPct);
+  ctx.strokeStyle = "#3370ff"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(xe, m.t); ctx.lineTo(xe, m.t + ph); ctx.stroke();
+  ctx.fillStyle = "#b8860b"; ctx.beginPath(); ctx.arc(xe, Yg(curFracs[0]), 4.2, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = "#1f7a3a"; ctx.beginPath(); ctx.arc(xe, Ys(curFracs[1]), 3.8, 0, 2 * Math.PI); ctx.fill();
+
+  if (hoverPct && hoverPct >= S.pctMin && hoverPct <= S.pctMax) {
+    const xh = X(hoverPct);
+    const idx = Math.min(S.pctGrid.length - 1, Math.max(0, Math.round((Math.log(hoverPct) - l0) / (l1 - l0) * (S.pctGrid.length - 1))));
+    vline(hoverPct, "rgba(31,35,41,0.35)", [2, 2], 1);
+    const extra = IS_CLUSTERED[S.dist] ? `  C${S.m}=${S.Cm[S.m - 1][idx].toFixed(2)}  C${S.m + 1}=${S.Cm[S.m][idx].toFixed(2)}` : "";
+    const txt = `ε=${hoverPct.toFixed(2)}% D  C₁=${S.Cm[0][idx].toFixed(2)}  C₂=${S.Cm[1][idx].toFixed(2)}${extra}`;
+    ctx.font = "11.5px -apple-system, sans-serif";
+    const tw = ctx.measureText(txt).width + 12, bx = Math.min(m.l + pw - tw - 4, Math.max(m.l + 4, xh + 6));
+    ctx.fillStyle = "rgba(25,30,42,0.88)"; ctx.beginPath(); ctx.roundRect(bx, m.t + 6, tw, 22, 5); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.fillText(txt, bx + 6, m.t + 21);
+  }
+  ctx.strokeStyle = "#aeb5c0"; ctx.lineWidth = 1; ctx.strokeRect(m.l, m.t, pw, ph);
+}
+
+function drawDistChart(curPct) {
+  const c = $("distChart"), [ctx, W, H] = fitCanvas(c);
+  const m = { l: 34, r: 12, t: 10, b: 26 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  c._map = { m, pw };
+  ctx.clearRect(0, 0, W, H);
+
+  const { hAll, hIntra, hInter } = S.hist, B = hAll.length;
+  const cl = IS_CLUSTERED[S.dist];
+  let yMax = 1;
+  for (let i = 0; i < B; i++) yMax = Math.max(yMax, cl ? Math.max(hIntra[i], hInter[i]) : hAll[i]);
+  const bw = pw / B;
+
+  ctx.strokeStyle = "#eceff4"; ctx.lineWidth = 1;
+  for (let p = 0; p <= 100; p += 20) {
+    const x = m.l + pw * (p / 100);
+    ctx.beginPath(); ctx.moveTo(x, m.t); ctx.lineTo(x, m.t + ph); ctx.stroke();
+    ctx.fillStyle = "#646a73"; ctx.font = "10.5px -apple-system, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(p + "%", x, H - 8);
+  }
+
+  if (cl) {
+    ctx.fillStyle = "rgba(245, 158, 11, 0.52)";
+    for (let i = 0; i < B; i++) {
+      const h = (hInter[i] / yMax) * ph;
+      if (h > 0.3) ctx.fillRect(m.l + i * bw, m.t + ph - h, Math.max(1, bw + 0.3), h);
+    }
+    ctx.fillStyle = "rgba(51, 112, 255, 0.58)";
+    for (let i = 0; i < B; i++) {
+      const h = (hIntra[i] / yMax) * ph;
+      if (h > 0.3) ctx.fillRect(m.l + i * bw, m.t + ph - h, Math.max(1, bw + 0.3), h);
+    }
+  } else {
+    ctx.fillStyle = "rgba(100, 116, 139, 0.55)";
+    for (let i = 0; i < B; i++) {
+      const h = (hAll[i] / yMax) * ph;
+      if (h > 0.3) ctx.fillRect(m.l + i * bw, m.t + ph - h, Math.max(1, bw + 0.3), h);
+    }
+  }
+
+  const xe = m.l + pw * Math.min(1, Math.max(0, curPct / 100));
+  ctx.strokeStyle = "#3370ff"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(xe, m.t); ctx.lineTo(xe, m.t + ph); ctx.stroke();
+
+  ctx.strokeStyle = "#aeb5c0"; ctx.lineWidth = 1; ctx.strokeRect(m.l, m.t, pw, ph);
+  ctx.fillStyle = "#646a73"; ctx.font = "10.5px -apple-system, sans-serif"; ctx.textAlign = "right";
+  ctx.fillText("density", m.l - 4, m.t + 10);
+}
+
+function drawCompChart(compFracs, nComp) {
+  const c = $("compChart"), [ctx, W, H] = fitCanvas(c);
+  const m = { l: 36, r: 12, t: 14, b: 24 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  ctx.clearRect(0, 0, W, H);
+
+  const K = 10, cl = IS_CLUSTERED[S.dist];
+  const slot = pw / K, bw = Math.max(8, slot * 0.64);
+  const yMax = Math.max(0.25, Math.min(1.0, Math.max(...compFracs) * 1.15));
+
+  ctx.strokeStyle = "#eceff4"; ctx.lineWidth = 1; ctx.fillStyle = "#646a73"; ctx.font = "10.5px -apple-system, sans-serif";
+  for (let t = 0; t <= 4; t++) {
+    const v = (yMax * t) / 4, y = m.t + ph * (1 - v / yMax);
+    ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(m.l + pw, y); ctx.stroke();
+    if (t % 2 === 0) { ctx.textAlign = "right"; ctx.fillText((100 * v).toFixed(0) + "%", m.l - 4, y + 3.5); }
+  }
+
+  for (let k = 0; k < K; k++) {
+    const v = compFracs[k] || 0, h = (v / yMax) * ph;
+    const x = m.l + k * slot + (slot - bw) / 2, y = m.t + ph - h;
+    ctx.fillStyle = k < 2 ? RANK_COLORS[k] : (cl && k < S.m ? RANK_COLORS[k % RANK_COLORS.length] : "#aeb6c4");
+    ctx.fillRect(x, y, bw, Math.max(0.5, h));
+    ctx.fillStyle = "#4b5563"; ctx.textAlign = "center"; ctx.font = "10.5px -apple-system, sans-serif";
+    ctx.fillText("C" + (k + 1), m.l + (k + 0.5) * slot, H - 7);
+    if (v >= 0.03) {
+      ctx.fillStyle = "#1f2329"; ctx.font = "600 10px -apple-system, sans-serif";
+      ctx.fillText((100 * v).toFixed(0) + "%", m.l + (k + 0.5) * slot, Math.max(m.t + 9, y - 3));
+    }
+  }
+
+  if (cl && S.m < K) {
+    const bx = m.l + S.m * slot;
+    ctx.save(); ctx.setLineDash([4, 3]); ctx.strokeStyle = "#d97706"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(bx, m.t); ctx.lineTo(bx, m.t + ph); ctx.stroke();
+    ctx.fillStyle = "#b45309"; ctx.font = "600 10.5px -apple-system, sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(`m = ${S.m}`, bx + 4, m.t + 11);
+    ctx.restore();
+  }
+  ctx.strokeStyle = "#aeb5c0"; ctx.lineWidth = 1; ctx.strokeRect(m.l, m.t, pw, ph);
+  $("compInfo").textContent = `${nComp.toLocaleString()} total component${nComp > 1 ? "s" : ""}`;
+}
+
+function pctAtMainChart(ev) {
+  const c = $("chart"), mp = c._map; if (!mp) return null;
+  const x = ev.clientX - c.getBoundingClientRect().left;
+  const t = Math.min(1, Math.max(0, (x - mp.m.l) / mp.pw));
+  return xScale === "log" ? Math.exp(mp.l0 + t * (mp.l1 - mp.l0)) : Math.max(S.pctMin, t * S.pctMax);
+}
+let chartDrag = false;
+$("chart").addEventListener("pointerdown", e => {
+  stopPlay(); chartDrag = true; $("chart").setPointerCapture(e.pointerId);
+  const p = pctAtMainChart(e); if (p) { sliderFromPct(p); scheduleUpdate(); }
+});
+$("chart").addEventListener("pointermove", e => {
+  hoverPct = pctAtMainChart(e);
+  if (chartDrag && hoverPct) sliderFromPct(hoverPct);
+  scheduleUpdate();
+});
+$("chart").addEventListener("pointerup", () => { chartDrag = false; });
+$("chart").addEventListener("pointerleave", () => { hoverPct = null; scheduleUpdate(); });
+
+let distDrag = false;
+function pctAtDistChart(ev) {
+  const c = $("distChart"), mp = c._map; if (!mp) return null;
+  const x = ev.clientX - c.getBoundingClientRect().left;
+  const t = Math.min(1, Math.max(0, (x - mp.m.l) / mp.pw));
+  return Math.max(S.pctMin, t * 100);
+}
+$("distChart").addEventListener("pointerdown", e => {
+  stopPlay(); distDrag = true; $("distChart").setPointerCapture(e.pointerId);
+  const p = pctAtDistChart(e); if (p) { sliderFromPct(p); scheduleUpdate(); }
+});
+$("distChart").addEventListener("pointermove", e => {
+  if (!distDrag) return;
+  const p = pctAtDistChart(e); if (p) { sliderFromPct(p); scheduleUpdate(); }
+});
+$("distChart").addEventListener("pointerup", () => { distDrag = false; });
+
+function stopPlay() {
+  if (playRaf) { cancelAnimationFrame(playRaf); playRaf = 0; $("play").textContent = "▶ Sweep ε"; }
+}
+$("play").addEventListener("click", () => {
+  if (playRaf) { stopPlay(); return; }
+  if (+$("eps").value >= 995) $("eps").value = 0;
+  $("play").textContent = "⏸ Pause";
+  let cur = +$("eps").value, last = performance.now();
+  const tick = now => {
+    cur += (now - last) * 0.13; last = now;
+    if (cur >= 1000) { $("eps").value = 1000; update(); stopPlay(); return; }
+    $("eps").value = Math.round(cur); update();
+    playRaf = requestAnimationFrame(tick);
+  };
+  playRaf = requestAnimationFrame(tick);
+});
+
+function stepCrit(dir) {
+  stopPlay();
+  const pts = criticalPoints(); if (!pts.length) return;
+  const cur = pctFromSlider();
+  const pick = dir > 0
+    ? (pts.find(p => p > cur * 1.03) || pts[0])
+    : ([...pts].reverse().find(p => p < cur * 0.97) || pts[pts.length - 1]);
+  sliderFromPct(pick); scheduleUpdate();
+}
+$("prevCrit").addEventListener("click", () => stepCrit(-1));
+$("nextCrit").addEventListener("click", () => stepCrit(1));
+$("eps").addEventListener("input", () => { stopPlay(); scheduleUpdate(); });
+$("showTopM").addEventListener("change", scheduleUpdate);
+$("mSlider").addEventListener("input", () => { $("mv").textContent = $("mSlider").value; });
+$("mSlider").addEventListener("change", () => run());
+$("n").addEventListener("input", () => { $("nv").textContent = $("n").value; });
+$("n").addEventListener("change", () => run());
+$("runs").addEventListener("change", () => run());
+$("regen").addEventListener("click", () => { $("regen").dataset.seed = (+$("regen").dataset.seed || 1) + 101; run(); });
+document.querySelectorAll("#presetBar .pill").forEach(b => b.addEventListener("click", () => { curDist = b.dataset.dist; run(); }));
+document.querySelectorAll("#dimBar .dim-btn").forEach(b => b.addEventListener("click", () => { curD = +b.dataset.d; run(); }));
+document.querySelectorAll("#scaleSeg button").forEach(b => b.addEventListener("click", () => {
+  const prevPct = S ? pctFromSlider() : null;
+  xScale = b.dataset.scale;
+  document.querySelectorAll("#scaleSeg button").forEach(x => x.classList.toggle("active", x.dataset.scale === xScale));
+  if (prevPct !== null) sliderFromPct(prevPct);
+  scheduleUpdate();
+}));
+$("shareBtn").addEventListener("click", () => {
+  const pct = pctFromSlider().toFixed(2);
+  history.replaceState(null, "", `#dist=${curDist}&d=${curD}&m=${$("mSlider").value}&n=${$("n").value}&scale=${xScale}&eps=${pct}`);
+  navigator.clipboard?.writeText(location.href);
+  toast("Link copied to clipboard");
+});
+
+let bootPct = null;
+if (location.hash.includes("=")) {
+  const q = new URLSearchParams(location.hash.slice(1));
+  if (q.get("dist") && DIST_META[q.get("dist")]) curDist = q.get("dist");
+  if (q.get("d") && [2, 3, 5, 10, 20, 50, 100].includes(+q.get("d"))) curD = +q.get("d");
+  if (q.get("m")) { const mv = Math.min(6, Math.max(2, +q.get("m"))); $("mSlider").value = mv; $("mv").textContent = mv; }
+  if (q.get("n")) { const nv = Math.min(1600, Math.max(200, +q.get("n"))); $("n").value = nv; $("nv").textContent = nv; }
+  if (q.get("scale") === "linear" || q.get("scale") === "log") {
+    xScale = q.get("scale");
+    document.querySelectorAll("#scaleSeg button").forEach(x => x.classList.toggle("active", x.dataset.scale === xScale));
+  }
+  if (q.get("eps")) bootPct = +q.get("eps");
+}
+window.addEventListener("resize", scheduleUpdate);
+run(bootPct);
+</script>
+</body>
+</html>
