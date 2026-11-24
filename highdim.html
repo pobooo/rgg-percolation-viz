@@ -790,7 +790,9 @@ function drawPercolationChart(curPct, curFracs) {
     const xh = X(hoverPct);
     const idx = Math.min(S.pctGrid.length - 1, Math.max(0, Math.round((Math.log(hoverPct) - l0) / (l1 - l0) * (S.pctGrid.length - 1))));
     vline(hoverPct, "rgba(31,35,41,0.35)", [2, 2], 1);
-    const extra = IS_CLUSTERED[S.dist] ? `  C${S.m}=${S.Cm[S.m - 1][idx].toFixed(2)}  C${S.m + 1}=${S.Cm[S.m][idx].toFixed(2)}` : "";
+    const extra = IS_CLUSTERED[S.dist]
+      ? (S.m > 2 ? `  C${S.m}=${S.Cm[S.m - 1][idx].toFixed(2)}` : "") + `  C${S.m + 1}=${S.Cm[S.m][idx].toFixed(2)}`
+      : "";
     const txt = `ε=${hoverPct.toFixed(2)}% D  C₁=${S.Cm[0][idx].toFixed(2)}  C₂=${S.Cm[1][idx].toFixed(2)}${extra}`;
     ctx.font = "11.5px -apple-system, sans-serif";
     const tw = ctx.measureText(txt).width + 12, bx = Math.min(m.l + pw - tw - 4, Math.max(m.l + 4, xh + 6));
@@ -802,7 +804,7 @@ function drawPercolationChart(curPct, curFracs) {
 
 function drawDistChart(curPct) {
   const c = $("distChart"), [ctx, W, H] = fitCanvas(c);
-  const m = { l: 34, r: 12, t: 10, b: 26 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
+  const m = { l: 14, r: 12, t: 10, b: 26 }, pw = W - m.l - m.r, ph = H - m.t - m.b;
   c._map = { m, pw };
   ctx.clearRect(0, 0, W, H);
 
@@ -844,8 +846,8 @@ function drawDistChart(curPct) {
   ctx.beginPath(); ctx.moveTo(xe, m.t); ctx.lineTo(xe, m.t + ph); ctx.stroke();
 
   ctx.strokeStyle = "#aeb5c0"; ctx.lineWidth = 1; ctx.strokeRect(m.l, m.t, pw, ph);
-  ctx.fillStyle = "#646a73"; ctx.font = "10.5px -apple-system, sans-serif"; ctx.textAlign = "right";
-  ctx.fillText("density", m.l - 4, m.t + 10);
+  ctx.fillStyle = "#646a73"; ctx.font = "10.5px -apple-system, sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("density", m.l + 5, m.t + 12);
 }
 
 function drawCompChart(compFracs, nComp) {
