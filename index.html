@@ -107,7 +107,7 @@
 <div class="wrap">
   <header>
     <h1>Percolation Phase Transitions in <i>ε</i>-Ball Random Geometric Graphs</h1>
-    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i> (expressed as % of point-set diameter <i>D</i>, the bounding-box diagonal) · Explore phase transitions and plateaus in the Giant Connected Component (GCC) &amp; Second Giant Connected Component (SGCC)</div>
+    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i>, normalized by <i>D</i> (the maximum distance between any two points) · Explore phase transitions and plateaus in the Giant Connected Component (GCC) &amp; Second Giant Connected Component (SGCC)</div>
   </header>
 
   <div class="card">
@@ -155,7 +155,7 @@
         <div class="legend">Component rank: <b style="color:#d62728">#1 (GCC)</b> · <b style="color:#1f77b4">#2 (SGCC)</b> · <b style="color:#2ca02c">#3</b> · <b style="color:#9467bd">#4</b> · <b style="color:#ff7f0e">#5</b> · <b style="color:#8c564b">#6</b> · gray = smaller · top-right circle = <i>ε</i> scale</div>
         <div class="legend" id="mstLegend" style="display:none; margin-top:4px; padding-top:4px; border-top:1px dashed #e5e8ef; color:#3d434d">
           <span class="sw" style="background:rgba(31,35,41,0.65); margin-left:0"></span>Active MST edges (≤ <i>ε</i>)
-          <span class="sw" style="background:none; height:0; border-top:2px dashed #f57c00"></span><b>Upcoming bridge (&gt; <i>ε</i>)</b>: shortest gap between two major components — they merge once <i>ε</i> reaches the labeled <b>% of point-set diameter <i>D</i></b>
+          <span class="sw" style="background:none; height:0; border-top:2px dashed #f57c00"></span><b>Upcoming bridge (&gt; <i>ε</i>)</b>: shortest gap between two major components — they merge once <i>ε</i> reaches the labeled <b>% of <i>D</i></b> (max distance between any two points)
         </div>
       </div>
       <div class="panel">
@@ -172,7 +172,7 @@
     </div>
 
     <div class="kpi">
-      <div><div class="v" id="k_eps">–</div><div class="k"><i>ε</i> (% of diameter <i>D</i>)</div></div>
+      <div><div class="v" id="k_eps">–</div><div class="k"><i>ε</i> (% of max span <i>D</i>)</div></div>
       <div><div class="v" id="k_deg">–</div><div class="k">Mean degree ⟨<i>k</i>⟩ = 2<i>E</i>/<i>N</i></div></div>
       <div><div class="v" id="k_gcc">–</div><div class="k">Largest component GCC / <i>N</i></div></div>
       <div><div class="v" id="k_sgcc">–</div><div class="k">Second largest SGCC / <i>N</i></div></div>
@@ -424,27 +424,47 @@ function sampleEdgesDense(P, T, mstCut, eps, estE, target) {
   return { eu: eu.subarray(0, cnt), ev: ev.subarray(0, cnt), cnt, sampled: true };
 }
 
+function exactDiameter(P) {
+  const { xs, ys, n } = P;
+  const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => xs[a] - xs[b] || ys[a] - ys[b]);
+  const cross = (o, a, b) => (xs[a] - xs[o]) * (ys[b] - ys[o]) - (ys[a] - ys[o]) * (xs[b] - xs[o]);
+  const lo = [], up = [];
+  for (const i of idx) {
+    while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], i) <= 0) lo.pop();
+    lo.push(i);
+  }
+  for (let k = idx.length - 1; k >= 0; k--) {
+    const i = idx[k];
+    while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], i) <= 0) up.pop();
+    up.push(i);
+  }
+  const H = lo.slice(0, -1).concat(up.slice(0, -1));
+  let maxD2 = 0;
+  for (let i = 0; i < H.length; i++) {
+    for (let j = i + 1; j < H.length; j++) {
+      const dx = xs[H[i]] - xs[H[j]], dy = ys[H[i]] - ys[H[j]], d2 = dx * dx + dy * dy;
+      if (d2 > maxD2) maxD2 = d2;
+    }
+  }
+  return Math.sqrt(maxD2);
+}
+
 function simulate(dist, n, runs, seed0) {
-  const Ps = [], Es = [];
+  const Ps = [], Es = [], Ds = [];
   let T0 = null;
   for (let r = 0; r < runs; r++) {
     const P = sample(dist, n, seed0 + 7919 * r), T = mst(P);
     if (r === 0) T0 = T;
-    Ps.push(P); Es.push(events(n, T));
+    Ps.push(P); Es.push(events(n, T)); Ds.push(exactDiameter(P));
   }
-  let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
-  for (const P of Ps) for (let i = 0; i < n; i++) {
-    if (P.xs[i] < xmin) xmin = P.xs[i]; if (P.xs[i] > xmax) xmax = P.xs[i];
-    if (P.ys[i] < ymin) ymin = P.ys[i]; if (P.ys[i] > ymax) ymax = P.ys[i];
-  }
-  const diam = Math.hypot(xmax - xmin, ymax - ymin);
+  const diam = Ds[0];
   const L = 520, grid = new Float64Array(L), Gm = new Float64Array(L), Sm = new Float64Array(L);
   const G0 = new Float64Array(L), S0 = new Float64Array(L);
   for (let i = 0; i < L; i++) grid[i] = diam * Math.pow(10, -3.3 + (Math.log10(0.5) + 3.3) * i / (L - 1));
   for (let r = 0; r < runs; r++) {
-    const E = Es[r];
+    const E = Es[r], scale = Ds[r] / diam;
     for (let i = 0; i < L; i++) {
-      const [g, s] = curveAt(E, grid[i], n);
+      const [g, s] = curveAt(E, grid[i] * scale, n);
       Gm[i] += g / runs; Sm[i] += s / runs;
       if (r === 0) { G0[i] = g; S0[i] = s; }
     }
@@ -515,7 +535,7 @@ function run(targetPct = null) {
     const plBtn = S.plateau
       ? `<button class="chip pl" data-eps="${Math.sqrt(S.plateau[0] * S.plateau[1])}">🎯 Plateau ${pct(S.plateau[0])}%–${pct(S.plateau[1])}% D (GCC≈${S.plateau[2].toFixed(2)}, ${(S.plateau[1] / S.plateau[0]).toFixed(1)}× wide)</button>`
       : `<span>No plateau (no single global ε separates clusters)</span>`;
-    $("chips").innerHTML = `<span>Jump to (<i>D</i> = point-set diameter):</span>${jBtns}${sgBtn}${plBtn}`;
+    $("chips").innerHTML = `<span>Jump to (<i>D</i> = max distance between any two points):</span>${jBtns}${sgBtn}${plBtn}`;
     $("chips").querySelectorAll("button[data-eps]").forEach(b => b.addEventListener("click", () => {
       stopPlay(); sliderFromEps(+b.dataset.eps); scheduleUpdate();
     }));
@@ -672,7 +692,7 @@ function update() {
   ctx.restore();
 
   const g = ranked[0][1] / n, s2 = ranked.length > 1 ? ranked[1][1] / n : 0;
-  $("epsv").textContent = `${eps.toFixed(4)} (${(100 * eps / S.diam).toFixed(2)}% of diameter D)`;
+  $("epsv").textContent = `${eps.toFixed(4)} (${(100 * eps / S.diam).toFixed(2)}% of D)`;
   $("k_eps").textContent = (100 * eps / S.diam).toFixed(2) + "%";
   $("k_deg").textContent = (2 * E / n).toFixed(2);
   $("k_gcc").textContent = g.toFixed(3);
@@ -708,7 +728,7 @@ function drawChart(eps, gCur, sCur) {
     if (k === 1 || k === 5) ctx.fillText(pct >= 1 ? pct.toFixed(0) : String(+pct.toPrecision(1)), X(r) - 8, H - m.b + 14);
   }
   ctx.save(); ctx.textAlign = "center";
-  ctx.fillText("ε (% of point-set diameter D, log scale)", m.l + pw / 2, H - 4);
+  ctx.fillText("ε (% of D, max distance between any two points; log scale)", m.l + pw / 2, H - 4);
   ctx.restore();
   for (let v = 0; v <= 1.001; v += 0.25) {
     ctx.beginPath(); ctx.moveTo(m.l, Yg(v)); ctx.lineTo(m.l + pw, Yg(v)); ctx.stroke();

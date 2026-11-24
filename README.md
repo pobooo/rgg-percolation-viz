@@ -12,7 +12,7 @@ An interactive visualization of **percolation phase transitions**, **cluster-sep
 
 ## Motivation
 
-Given $N$ points $\{x_1, \dots, x_N\} \subset \mathbb{R}^2$, connect every pair with Euclidean distance $\|x_i - x_j\|_2 \le \varepsilon$ to form the $\varepsilon$-ball RGG $G(N, \varepsilon)$. As $\varepsilon$ increases from $0$ to the point-set diameter $D$:
+Given $N$ points $\{x_1, \dots, x_N\} \subset \mathbb{R}^2$, connect every pair with Euclidean distance $\|x_i - x_j\|_2 \le \varepsilon$ to form the $\varepsilon$-ball RGG $G(N, \varepsilon)$. Let $D = \max_{i,j}\|x_i - x_j\|_2$ denote the **maximum distance between any two points** (used to normalize $\varepsilon$ as `% of D` across distributions). As $\varepsilon$ increases from $0$ to $D$:
 
 - **Giant Connected Component (`GCC / N`)**: fraction of nodes in the largest connected component.
 - **Second Giant Connected Component (`SGCC / N`)**: fraction of nodes in the second-largest connected component, which peaks sharply right before two major components merge.
