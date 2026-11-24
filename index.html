@@ -72,17 +72,14 @@
 
   .demo { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.42fr); gap: 14px; }
   .panel { border: 1px solid var(--line); border-radius: 11px; padding: 10px; position: relative; background: #fff; }
-  .panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin: 0 2px 6px; gap: 8px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); margin: 0 2px 6px; gap: 8px; min-height: 22px; }
   .panel-head b { color: var(--ink); font-size: 13px; }
+  .node-pill { background: #1f2329; color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 11.8px; font-variant-numeric: tabular-nums; }
   .panel canvas { width: 100%; display: block; border-radius: 6px; }
   #scatter { aspect-ratio: 1 / 1; cursor: crosshair; background: #fafbfd; touch-action: none; }
   #chart { aspect-ratio: 1.48 / 1; cursor: ew-resize; touch-action: none; }
-  .hud {
-    position: absolute; left: 16px; bottom: 38px; background: rgba(25, 30, 42, .88); color: #fff;
-    padding: 5px 10px; border-radius: 7px; font-size: 12px; pointer-events: none; display: none; font-variant-numeric: tabular-nums;
-  }
   .legend { font-size: 11.8px; color: var(--muted); margin: 6px 2px 0; line-height: 1.55; }
-  .legend i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin: 0 4px 0 8px; border-radius: 2px; }
+  .legend .sw { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin: 0 4px 0 8px; border-radius: 2px; }
 
   .kpi { display: grid; grid-template-columns: repeat(6, 1fr); gap: 9px; margin-top: 12px; }
   .kpi div { background: #f6f8fb; border: 1px solid #eceff5; border-radius: 10px; padding: 8px 11px; }
@@ -110,7 +107,7 @@
 <div class="wrap">
   <header>
     <h1>Percolation Phase Transitions in <i>ε</i>-Ball Random Geometric Graphs</h1>
-    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i> · Explore phase transitions and plateaus in the Giant Connected Component (GCC) &amp; Second Giant Connected Component (SGCC)</div>
+    <div class="sub">Connect 2D point pairs at distance ≤ <i>ε</i> (expressed as % of point-set diameter <i>D</i>, the bounding-box diagonal) · Explore phase transitions and plateaus in the Giant Connected Component (GCC) &amp; Second Giant Connected Component (SGCC)</div>
   </header>
 
   <div class="card">
@@ -153,24 +150,23 @@
 
     <div class="demo">
       <div class="panel">
-        <div class="panel-head"><b>Point Cloud &amp; <i>ε</i>-Graph Components</b><span>Hover any node to inspect its <i>ε</i>-ball &amp; degree</span></div>
+        <div class="panel-head"><b>Point Cloud &amp; <i>ε</i>-Graph Components</b><span id="scatterInfo">Hover any node to inspect its <i>ε</i>-ball &amp; degree</span></div>
         <canvas id="scatter"></canvas>
-        <div class="hud" id="scatterHud"></div>
         <div class="legend">Component rank: <b style="color:#d62728">#1 (GCC)</b> · <b style="color:#1f77b4">#2 (SGCC)</b> · <b style="color:#2ca02c">#3</b> · <b style="color:#9467bd">#4</b> · <b style="color:#ff7f0e">#5</b> · <b style="color:#8c564b">#6</b> · gray = smaller · top-right circle = <i>ε</i> scale</div>
         <div class="legend" id="mstLegend" style="display:none; margin-top:4px; padding-top:4px; border-top:1px dashed #e5e8ef; color:#3d434d">
-          <i style="background:rgba(31,35,41,0.65); margin-left:0"></i>Active MST edges (≤ <i>ε</i>)
-          <i style="background:none; height:0; border-top:2px dashed #f57c00"></i><b>Upcoming bridge (&gt; <i>ε</i>)</b>: shortest gap between two major components — they merge once <i>ε</i> reaches the labeled <b>% <i>D</i></b>
+          <span class="sw" style="background:rgba(31,35,41,0.65); margin-left:0"></span>Active MST edges (≤ <i>ε</i>)
+          <span class="sw" style="background:none; height:0; border-top:2px dashed #f57c00"></span><b>Upcoming bridge (&gt; <i>ε</i>)</b>: shortest gap between two major components — they merge once <i>ε</i> reaches the labeled <b>% of point-set diameter <i>D</i></b>
         </div>
       </div>
       <div class="panel">
         <div class="panel-head"><b>Percolation Curves GCC(<i>ε</i>) / SGCC(<i>ε</i>)</b><span>Click or drag on the chart to scrub <i>ε</i></span></div>
         <canvas id="chart"></canvas>
         <div class="legend">
-          <i style="background:var(--gcc)"></i>GCC/<i>N</i> (left axis)
-          <i style="background:var(--sgcc)"></i>SGCC/<i>N</i> (right axis)
-          <i style="background:#333; height:1px; border-top:1.5px dashed #333"></i>Detected GCC jump
-          <i style="background:#f5e68a; height:9px"></i>Plateau (suitable <i>ε</i>)
-          <i style="background:#3370ff"></i>Current <i>ε</i>
+          <span class="sw" style="background:var(--gcc); margin-left:0"></span>GCC/<i>N</i> (left axis)
+          <span class="sw" style="background:var(--sgcc)"></span>SGCC/<i>N</i> (right axis)
+          <span class="sw" style="background:none; height:0; border-top:1.5px dashed #333"></span>Detected GCC jump
+          <span class="sw" style="background:#f5e68a; height:9px"></span>Plateau (suitable <i>ε</i>)
+          <span class="sw" style="background:#3370ff"></span>Current <i>ε</i>
         </div>
       </div>
     </div>
@@ -507,19 +503,19 @@ function run(targetPct = null) {
   document.querySelectorAll("#presetBar .pill").forEach(b => b.classList.toggle("active", b.dataset.dist === dist));
   $("distHint").textContent = "💡 " + (DIST_META[dist] || DIST_META.uniform);
   $("status").textContent = "Computing…";
-  hoverNode = -1; $("scatterHud").style.display = "none";
+  hoverNode = -1;
   requestAnimationFrame(() => {
     const t0 = performance.now();
     const seed = (+$("regen").dataset.seed || 1);
     S = simulate(dist, n, runs, seed);
     $("status").textContent = `${runs} realization${runs > 1 ? "s" : ""} · ${(performance.now() - t0).toFixed(0)} ms`;
     const pct = v => (100 * v / S.diam).toFixed(2);
-    const jBtns = S.jumps.map((v, i) => `<button class="chip" data-eps="${v}">⚡ Jump${S.jumps.length > 1 ? " #" + (i + 1) : ""} @ ${pct(v)}%</button>`).join("");
-    const sgBtn = `<button class="chip sg" data-eps="${S.sgccPeak[0]}">▲ SGCC peak ${S.sgccPeak[1].toFixed(2)} @ ${pct(S.sgccPeak[0])}%</button>`;
+    const jBtns = S.jumps.map((v, i) => `<button class="chip" data-eps="${v}">⚡ Jump${S.jumps.length > 1 ? " #" + (i + 1) : ""} @ ${pct(v)}% D</button>`).join("");
+    const sgBtn = `<button class="chip sg" data-eps="${S.sgccPeak[0]}">▲ SGCC peak ${S.sgccPeak[1].toFixed(2)} @ ${pct(S.sgccPeak[0])}% D</button>`;
     const plBtn = S.plateau
-      ? `<button class="chip pl" data-eps="${Math.sqrt(S.plateau[0] * S.plateau[1])}">🎯 Plateau ${pct(S.plateau[0])}%–${pct(S.plateau[1])}% (GCC≈${S.plateau[2].toFixed(2)}, ${(S.plateau[1] / S.plateau[0]).toFixed(1)}× wide)</button>`
+      ? `<button class="chip pl" data-eps="${Math.sqrt(S.plateau[0] * S.plateau[1])}">🎯 Plateau ${pct(S.plateau[0])}%–${pct(S.plateau[1])}% D (GCC≈${S.plateau[2].toFixed(2)}, ${(S.plateau[1] / S.plateau[0]).toFixed(1)}× wide)</button>`
       : `<span>No plateau (no single global ε separates clusters)</span>`;
-    $("chips").innerHTML = `<span>Jump to:</span>${jBtns}${sgBtn}${plBtn}`;
+    $("chips").innerHTML = `<span>Jump to (<i>D</i> = point-set diameter):</span>${jBtns}${sgBtn}${plBtn}`;
     $("chips").querySelectorAll("button[data-eps]").forEach(b => b.addEventListener("click", () => {
       stopPlay(); sliderFromEps(+b.dataset.eps); scheduleUpdate();
     }));
@@ -651,9 +647,11 @@ function update() {
     ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(px, py, rad + 2.2, 0, 2 * Math.PI); ctx.fill();
     ctx.restore();
     const rk = rank.get(root[hoverNode]) + 1, cs = sizes.get(root[hoverNode]);
-    const hud = $("scatterHud");
-    hud.style.display = "block";
-    hud.textContent = `Node #${hoverNode} · degree k = ${deg} · Component #${rk} (${cs} nodes, ${(100 * cs / n).toFixed(1)}%)`;
+    $("scatterInfo").className = "node-pill";
+    $("scatterInfo").textContent = `Node #${hoverNode} · degree k = ${deg} · Component #${rk} (${cs} nodes, ${(100 * cs / n).toFixed(1)}%)`;
+  } else {
+    $("scatterInfo").className = "";
+    $("scatterInfo").innerHTML = "Hover any node to inspect its <i>ε</i>-ball &amp; degree";
   }
 
   const rTrue = Math.max(1.5, eps * sc);
@@ -788,7 +786,7 @@ $("scatter").addEventListener("pointermove", e => {
   if (best !== hoverNode) { hoverNode = best; scheduleUpdate(); }
 });
 $("scatter").addEventListener("pointerleave", () => {
-  if (hoverNode !== -1) { hoverNode = -1; $("scatterHud").style.display = "none"; scheduleUpdate(); }
+  if (hoverNode !== -1) { hoverNode = -1; scheduleUpdate(); }
 });
 
 function stopPlay() {
